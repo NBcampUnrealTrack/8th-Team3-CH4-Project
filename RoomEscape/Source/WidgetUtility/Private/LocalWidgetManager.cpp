@@ -22,16 +22,8 @@ ULocalWidgetManager* ULocalWidgetManager::GetInstance(const UObject* WorldContex
 		return nullptr;
 	}
 
-	// 월드에 존재하는 첫번째 플레이어 컨트롤러 얻기
-	APlayerController* Controller = WorldContextObject->GetWorld()->GetFirstPlayerController();
-	if (IsValid(Controller) == false)
-	{
-		//UE_LOG(LogTemp, Warning, TEXT("# %s - None PlayerController was searched"), FUNCTION_SIG);
-		return nullptr;
-	}
-
-	// 로컬 플레이어 객체 얻기
-	ULocalPlayer* LocalPlayer = Controller->GetLocalPlayer();
+	// 월드에 존재하는 첫번째 로컬 플레이어 객체 얻기
+	ULocalPlayer* LocalPlayer = World->GetFirstLocalPlayerFromController();
 
 	// SubSystem 얻기
 	return LocalPlayer == nullptr ? nullptr : LocalPlayer->GetSubsystem<ULocalWidgetManager>();
