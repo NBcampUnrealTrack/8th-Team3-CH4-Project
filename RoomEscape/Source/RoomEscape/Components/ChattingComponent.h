@@ -25,9 +25,8 @@ protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
 
-public:	
-	// Called every frame
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+	// IWidgetInitializableInterface을(를) 통해 상속됨
+	void InitWidget_Implementation() override;
 
 public:
 	// 서버로부터 메시지를 수신하였을 경우 실행되는 이벤트
@@ -44,9 +43,6 @@ protected:
 	TSubclassOf<UUserWidget> ChattingWidgetClass;
 
 protected:
-	// IWidgetInitializableInterface을(를) 통해 상속됨
-	void InitWidget_Implementation() override;
-
 	// (Client 호출, Server 실행) 메시지를 전송하는 함수
 	UFUNCTION(Server, Reliable, BlueprintCallable)
 	void ServerOnMessageCommitted(const struct FGameplayTag& ChannelTag, const FString& Message);

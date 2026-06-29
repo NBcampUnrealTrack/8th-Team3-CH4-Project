@@ -13,7 +13,7 @@ UChattingComponent::UChattingComponent()
 {
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
-	PrimaryComponentTick.bCanEverTick = true;
+	PrimaryComponentTick.bCanEverTick = false;
 
 	// ...
 }
@@ -31,15 +31,6 @@ void UChattingComponent::BeginPlay()
 
 	// Widget 초기 설정 진행
 	IWidgetInitializableInterface::Execute_InitWidget(this);
-}
-
-
-// Called every frame
-void UChattingComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
-{
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-	// ...
 }
 
 void UChattingComponent::InitWidget_Implementation()
@@ -70,6 +61,10 @@ void UChattingComponent::InitWidget_Implementation()
 	// 채팅 전송 이벤트 연결
 	ChattingWidget->OnMessageCommitted.AddDynamic(this, &UChattingComponent::ServerOnMessageCommitted);
 
+	/*
+	* HUD Widget 구현 후 ChattingWidget을 HUD Widget의 Child로 추가하도록 수정 필요
+	*/
+	UE_LOG(LogTemp, Warning, TEXT("# ChattingWidget을 HUD Widget의 Child로 추가하도록 수정 필요"));
 	ChattingWidget->AddToPlayerScreen();
 }
 
