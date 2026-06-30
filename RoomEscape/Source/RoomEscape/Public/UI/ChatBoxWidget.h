@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "InitializeUtilityInterface.h"
+#include "UI/InitializeUtilityInterface.h"
 #include "ChatBoxWidget.generated.h"
 
 // 메시지를 전송하려는 경우 

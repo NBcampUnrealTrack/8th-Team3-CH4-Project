@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-#include "WidgetInitializableInterface.h"
+#include "Components/WidgetInitializableInterface.h"
 #include "ChattingComponent.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnMessageReceivedSignature, const struct FGameplayTag&, ChannelTag, const FString&, Sender, const FString&, Message);
