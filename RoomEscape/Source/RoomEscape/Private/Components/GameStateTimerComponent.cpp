@@ -1,11 +1,11 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "GameStateTimerComponent.h"
+#include "Components/GameStateTimerComponent.h"
 #include "GameFramework/GameStateBase.h"
 #include "Net/UnrealNetwork.h"
-#include "LocalWidgetManager.h"
-#include "InitializeUtilityInterface.h"
+#include "UI/LocalWidgetManager.h"
+#include "UI/InitializeUtilityInterface.h"
 
 // Sets default values for this component's properties
 UGameStateTimerComponent::UGameStateTimerComponent()

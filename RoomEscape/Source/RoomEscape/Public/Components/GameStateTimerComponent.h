@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-#include "WidgetInitializableInterface.h"
+#include "Components/WidgetInitializableInterface.h"
 #include "GameStateTimerComponent.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FTimerChangeSignature, const FTimespan&, RemainTime, const FTimespan&, MaxTime);
