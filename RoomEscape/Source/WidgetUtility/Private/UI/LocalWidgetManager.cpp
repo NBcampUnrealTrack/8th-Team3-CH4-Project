@@ -1,7 +1,7 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "LocalWidgetManager.h"
+#include "UI/LocalWidgetManager.h"
 
 // ULocalWidgetManager 클래스에서 사용할 UE_LOG 카테고리 선언 및 정의
 

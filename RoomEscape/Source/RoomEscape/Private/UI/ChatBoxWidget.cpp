@@ -1,7 +1,7 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "ChatBoxWidget.h"
+#include "UI/ChatBoxWidget.h"
 #include "Blueprint/WidgetTree.h"
 #include "Components/SizeBox.h"
 #include "Components/ScrollBox.h"
@@ -110,8 +110,8 @@ void UChatBoxWidget::OnMessageReceived(const FGameplayTag& ChannelTag, const FSt
 	// RichTextBlock의 TextStyleSet 설정
 	RichTextBlock_ChatLog->SetTextStyleSet(ChatLogTextStyleTable);
 
-	// 수신된 메시지를 RichText로 변환
-	FString RichTextStyleMessageString = FString::Printf(TEXT("[%s] <%s>%s</> : %s"), *FDateTime::Now().ToFormattedString(TEXT("%H:%M")), *ChannelTag.ToString(), *Sender, *Message);
+	// 수신된 메시지를 RichText 스타일으로 변환
+	FString RichTextStyleMessageString = FString::Printf(TEXT("[%s] %s : %s"), *FDateTime::Now().ToFormattedString(TEXT("%H:%M")), *Sender, *Message);
 
 	// TextBlock의 Text 설정
 	RichTextBlock_ChatLog->SetText(FText::FromString(RichTextStyleMessageString));
