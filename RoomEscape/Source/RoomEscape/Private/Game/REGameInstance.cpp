@@ -52,7 +52,7 @@ void UREGameInstance::OnCreateSessionComplete(FName SessionName, bool bWasSucces
 {
 	if (bWasSuccessful)
 	{
-		GetWorld()->ServerTravel("/Game/Content/Level/MainLevel?listen");
+		GetWorld()->ServerTravel("/Game/Level/MainLevel?listen");
 	}
 }
 
