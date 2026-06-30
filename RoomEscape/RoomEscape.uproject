@@ -1,4 +1,4 @@
-﻿{
+{
 	"FileVersion": 3,
 	"EngineAssociation": "5.5",
 	"Category": "",
@@ -16,9 +16,7 @@
 		{
 			"Name": "WidgetUtility",
 			"Type": "Runtime",
-			"LoadingPhase": "Default",
-			"AdditionalDependencies": [
-			]
+			"LoadingPhase": "Default"
 		}
 	],
 	"Plugins": [
@@ -28,6 +26,10 @@
 			"TargetAllowList": [
 				"Editor"
 			]
+		},
+		{
+			"Name": "CommonUI",
+			"Enabled": true
 		}
 	]
 }
