@@ -1,4 +1,5 @@
 #include "Game/REGameInstance.h"
+#include "Data/REItemDataSubsystem.h"
 #include "OnlineSubsystem.h"
 #include "OnlineSessionSettings.h"
 #include "OnlineSubsystemUtils.h"
@@ -11,6 +12,11 @@ UREGameInstance::UREGameInstance()
 void UREGameInstance::Init()
 {
 	Super::Init();
+
+	if (UREItemDataSubsystem* ItemDataSubsystem = GetSubsystem<UREItemDataSubsystem>())
+	{
+		ItemDataSubsystem->SetItemDataTable(ItemDataTable);
+	}
 	
 	// Get Null to connect session interface
 	if (IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld()))
@@ -46,7 +52,7 @@ void UREGameInstance::OnCreateSessionComplete(FName SessionName, bool bWasSucces
 {
 	if (bWasSuccessful)
 	{
-		GetWorld()->ServerTravel("/Game/Content/Level/MainLevel?listen");
+		GetWorld()->ServerTravel("/Game/Level/MainLevel?listen");
 	}
 }
 

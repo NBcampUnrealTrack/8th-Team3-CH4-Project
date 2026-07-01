@@ -4,6 +4,8 @@ DerivedDataCache/
 Intermediate/
 Saved/
 Plugins/
+Resource/
+Content/Resource/
 
 *.sln
 *.suo

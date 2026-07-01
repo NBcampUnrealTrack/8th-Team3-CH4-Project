@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Engine/GameInstance.h"
+#include "Engine/DataTable.h"
 #include "Interfaces/OnlineSessionInterface.h"
 #include "REGameInstance.generated.h"
 
@@ -20,8 +21,14 @@ public:
 	
 	UFUNCTION(BlueprintCallable, Category = "Network")
 	void JoinGame();
+
+	UFUNCTION(BlueprintPure, Category = "Item")
+	FORCEINLINE UDataTable* GetItemDataTable() const { return ItemDataTable; }
 	
 protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item", meta = (AllowPrivateAccess = "true", RequiredAssetDataTags = "RowStructure=/Script/RoomEscape.REItemDataRow"))
+	TObjectPtr<UDataTable> ItemDataTable;
+
 	TWeakPtr<IOnlineSession> SessionInterface;
 	TSharedPtr<class FOnlineSessionSearch> SessionSearch;
 	
