@@ -1,15 +1,11 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
-
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
 #include "REPlayerController.generated.h"
 
 class UInputMappingContext;
-/**
- * 
- */
+
 UCLASS()
 class ROOMESCAPE_API AREPlayerController : public APlayerController
 {
@@ -23,4 +19,5 @@ protected:
 	
 	UPROPERTY(EditDefaultsOnly, Category="Input")
 	int32 MappingPriority;
+
 };

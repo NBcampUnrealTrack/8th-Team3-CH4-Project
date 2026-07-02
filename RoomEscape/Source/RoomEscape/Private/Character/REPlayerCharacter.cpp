@@ -1,50 +1,59 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "Character/REPlayerCharacter.h"
 #include "AbilitySystem/Abilities/REGameplayAbility.h"
 
 #include "AbilitySystemComponent.h"
-#include "EnhancedInputComponent.h"
 #include "AbilitySystem/Abilities/GA_Interact.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "EnhancedInputComponent.h"
+#include "EnhancedInputSubsystems.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/PlayerController.h"
+#include "InputAction.h"
+#include "InputMappingContext.h"
 #include "Interaction/REInteractable.h"
+#include "Puzzles/Framework/REPuzzleInteractableActor.h"
 
-
-// Sets default values
 AREPlayerCharacter::AREPlayerCharacter()
 {
-	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
-	
-	// --- 카메라 : 캡슐 부착, 눈높이, 마우스 Look으로 회전 제어
+
 	FirstPersonCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
 	FirstPersonCamera->SetupAttachment(GetCapsuleComponent());
-	FirstPersonCamera->SetRelativeLocation(FVector(0.0f, 0.0f, 60.0f)); // 눈 높이
+	FirstPersonCamera->SetRelativeLocation(FVector(0.0f, 0.0f, 60.0f));
 	FirstPersonCamera->bUsePawnControlRotation = true;
-	
-	// --- 1인칭 팔 : 카메라 북착, 소유자에게만 보임
+
 	FirstPersonArms = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("FirstPersonArms"));
 	FirstPersonArms->SetupAttachment(FirstPersonCamera);
 	FirstPersonArms->SetOnlyOwnerSee(true);
 	FirstPersonArms->bCastDynamicShadow = false;
 	FirstPersonArms->CastShadow = false;
-	
-	// ---전신 : 내 화면엔 숨기고 상대에게만 보임(상대에게 보일 필요 없으면 삭제 요망)
+
 	GetMesh()->SetOwnerNoSee(true);
-	
-	// --- 1인칭 회전
+
 	bUseControllerRotationYaw = true;
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationRoll = false;
 	GetCharacterMovement()->bOrientRotationToMovement = false;
-	
-	// --- ASC 생성
+	JumpMaxCount = 1;
+	JumpMaxHoldTime = 0.12f;
+	ApplyJumpMovementSettings();
+
+	NativeJumpAction = CreateDefaultSubobject<UInputAction>(TEXT("IA_Jump"));
+	if (NativeJumpAction)
+	{
+		NativeJumpAction->ValueType = EInputActionValueType::Boolean;
+	}
+
 	AbilitySystemComp = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComp"));
 	AbilitySystemComp->SetIsReplicated(true);
 	AbilitySystemComp->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
+}
+
+void AREPlayerCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+	ApplyJumpMovementSettings();
 }
 
 UAbilitySystemComponent* AREPlayerCharacter::GetAbilitySystemComponent() const
@@ -59,15 +68,21 @@ void AREPlayerCharacter::ServerInteract_Implementation(AActor* Target)
 		return;
 	}
 
-	// 서버 검증: 거리 체크(클라가 엉뚱한 대상 보내는 것 방지)
 	const float Dist = FVector::Dist(GetActorLocation(), Target->GetActorLocation());
-	if (Dist > InteractionDistance + 100.f)   // 약간의 여유
+	if (Dist > InteractionDistance + 100.f)
 	{
 		return;
 	}
 
-	// 서버 권한으로 실제 상호작용
-	IREInteractable::Execute_Interact(Target, this);
+	if (AREPuzzleInteractableActor* PuzzleInteractable = Cast<AREPuzzleInteractableActor>(Target))
+	{
+		PuzzleInteractable->ProcessServerInteract(this);
+	}
+	else
+	{
+		IREInteractable::Execute_Interact(Target, this);
+	}
+
 	UE_LOG(LogTemp, Warning, TEXT("[ServerInteract] %s -> %s"), *GetName(), *Target->GetName());
 }
 
@@ -82,13 +97,13 @@ AActor* AREPlayerCharacter::TraceForInteractable(FHitResult& OutHit) const
 	{
 		return nullptr;
 	}
-	
+
 	const FVector Start = FirstPersonCamera->GetComponentLocation();
 	const FVector End = Start + FirstPersonCamera->GetForwardVector() * InteractionDistance;
-	
+
 	FCollisionQueryParams Params;
 	Params.AddIgnoredActor(this);
-	
+
 	if (GetWorld()->LineTraceSingleByChannel(OutHit, Start, End, ECC_Visibility, Params))
 	{
 		return OutHit.GetActor();
@@ -99,7 +114,7 @@ AActor* AREPlayerCharacter::TraceForInteractable(FHitResult& OutHit) const
 void AREPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
-	
+
 	if (UEnhancedInputComponent* EIC = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
 		if (InteractAction)
@@ -114,14 +129,26 @@ void AREPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		{
 			EIC->BindAction(LookAction, ETriggerEvent::Triggered, this, &AREPlayerCharacter::Input_Look);
 		}
+		if (UInputAction* EffectiveJumpAction = GetJumpInputAction())
+		{
+			EIC->BindAction(EffectiveJumpAction, ETriggerEvent::Started, this, &AREPlayerCharacter::Input_JumpStarted);
+			EIC->BindAction(EffectiveJumpAction, ETriggerEvent::Completed, this, &AREPlayerCharacter::Input_JumpCompleted);
+			EIC->BindAction(EffectiveJumpAction, ETriggerEvent::Canceled, this, &AREPlayerCharacter::Input_JumpCompleted);
+		}
 	}
+
+	RegisterJumpMappingContext();
+}
+
+void AREPlayerCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	UnregisterJumpMappingContext();
+	Super::EndPlay(EndPlayReason);
 }
 
 void AREPlayerCharacter::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
-	
-	// 서버 경로
 	InitAbilityActorInfo();
 	GrantDefaultAbilities();
 }
@@ -129,8 +156,6 @@ void AREPlayerCharacter::PossessedBy(AController* NewController)
 void AREPlayerCharacter::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();
-	
-	// 원경 클라 경로
 	InitAbilityActorInfo();
 }
 
@@ -147,13 +172,11 @@ void AREPlayerCharacter::Input_Move(const FInputActionValue& Value)
 	const FVector2D MoveVector = Value.Get<FVector2D>();
 	if (Controller)
 	{
-		// 시선(컨트롤 회전) 기준 전/후·좌/우
 		const FRotator YawRotation(0.f, Controller->GetControlRotation().Yaw, 0.f);
 		const FVector Forward = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-		const FVector Right   = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
-
+		const FVector Right = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 		AddMovementInput(Forward, MoveVector.Y);
-		AddMovementInput(Right,   MoveVector.X);
+		AddMovementInput(Right, MoveVector.X);
 	}
 }
 
@@ -164,31 +187,36 @@ void AREPlayerCharacter::Input_Look(const FInputActionValue& Value)
 	AddControllerPitchInput(LookVector.Y);
 }
 
+void AREPlayerCharacter::Input_JumpStarted()
+{
+	if (Controller && Controller->IsMoveInputIgnored())
+	{
+		return;
+	}
+	Jump();
+}
+
+void AREPlayerCharacter::Input_JumpCompleted()
+{
+	StopJumping();
+}
+
 void AREPlayerCharacter::InitAbilityActorInfo()
 {
 	if (AbilitySystemComp)
 	{
-		// OwnerActor, AvatarActor = 자기자신
 		AbilitySystemComp->InitAbilityActorInfo(this, this);
-		
-		// 임시로그
 		GEngine->AddOnScreenDebugMessage(
 			-1,
 			5.0f,
 			FColor::Red,
-			FString::Printf(TEXT("[ASC Init] %s Auth=%d Local=%d"), 
-				*GetName(), HasAuthority(), IsLocallyControlled()));
-		UE_LOG(LogTemp, Warning, TEXT("[ASC Init] %s | Authority=%d | LocallyControlled=%d | Role=%d"),
-				*GetName(),
-				HasAuthority(),
-				IsLocallyControlled(),
-				(int32)GetLocalRole());
+			FString::Printf(TEXT("[ASC Init] %s Auth=%d Local=%d"), *GetName(), HasAuthority(), IsLocallyControlled()));
+		UE_LOG(LogTemp, Warning, TEXT("[ASC Init] %s | Authority=%d | LocallyControlled=%d | Role=%d"), *GetName(), HasAuthority(), IsLocallyControlled(), (int32)GetLocalRole());
 	}
 }
 
 void AREPlayerCharacter::GrantDefaultAbilities()
 {
-	// 어빌리티 부여는 서버에서만. 부여 결과는 클라로 복제됨
 	if (!HasAuthority() || !AbilitySystemComp)
 	{
 		return;
@@ -201,4 +229,76 @@ void AREPlayerCharacter::GrantDefaultAbilities()
 			AbilitySystemComp->GiveAbility(FGameplayAbilitySpec(AbilityClass, 1));
 		}
 	}
+}
+
+void AREPlayerCharacter::ApplyJumpMovementSettings()
+{
+	if (UCharacterMovementComponent* MovementComponent = GetCharacterMovement())
+	{
+		MovementComponent->JumpZVelocity = CharacterJumpZVelocity;
+		MovementComponent->GravityScale = CharacterGravityScale;
+		MovementComponent->AirControl = CharacterAirControl;
+		MovementComponent->BrakingDecelerationFalling = CharacterBrakingDecelerationFalling;
+	}
+}
+
+void AREPlayerCharacter::RegisterJumpMappingContext()
+{
+	if (bRegisterJumpMappingAtRuntime == false)
+	{
+		return;
+	}
+
+	APlayerController* PlayerController = Cast<APlayerController>(Controller);
+	if (IsValid(PlayerController) == false || PlayerController->IsLocalController() == false)
+	{
+		return;
+	}
+
+	ULocalPlayer* LocalPlayer = PlayerController->GetLocalPlayer();
+	if (IsValid(LocalPlayer) == false)
+	{
+		return;
+	}
+
+	UEnhancedInputLocalPlayerSubsystem* Subsystem = LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>();
+	UInputAction* EffectiveJumpAction = GetJumpInputAction();
+	if (IsValid(Subsystem) == false || IsValid(EffectiveJumpAction) == false || JumpKey.IsValid() == false)
+	{
+		return;
+	}
+
+	if (IsValid(RuntimeJumpMappingContext) == false)
+	{
+		RuntimeJumpMappingContext = NewObject<UInputMappingContext>(this, TEXT("IMC_Jump_Runtime"));
+		RuntimeJumpMappingContext->MapKey(EffectiveJumpAction, JumpKey);
+	}
+
+	Subsystem->RemoveMappingContext(RuntimeJumpMappingContext);
+	Subsystem->AddMappingContext(RuntimeJumpMappingContext, JumpMappingPriority);
+}
+
+void AREPlayerCharacter::UnregisterJumpMappingContext()
+{
+	if (IsValid(RuntimeJumpMappingContext) == false)
+	{
+		return;
+	}
+
+	APlayerController* PlayerController = Cast<APlayerController>(Controller);
+	if (IsValid(PlayerController) == true && PlayerController->IsLocalController() == true)
+	{
+		if (ULocalPlayer* LocalPlayer = PlayerController->GetLocalPlayer())
+		{
+			if (UEnhancedInputLocalPlayerSubsystem* Subsystem = LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
+			{
+				Subsystem->RemoveMappingContext(RuntimeJumpMappingContext);
+			}
+		}
+	}
+}
+
+UInputAction* AREPlayerCharacter::GetJumpInputAction() const
+{
+	return IsValid(JumpAction) == true ? JumpAction.Get() : NativeJumpAction.Get();
 }

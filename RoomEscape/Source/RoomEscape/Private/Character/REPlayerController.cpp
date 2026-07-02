@@ -1,7 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
-
-
-#include "Character/REPlayerController.h"
+﻿#include "Character/REPlayerController.h"
 
 #include "EnhancedInputSubsystems.h"
 
