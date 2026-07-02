@@ -23,6 +23,31 @@ namespace RETag
 		UE_DECLARE_GAMEPLAY_TAG_EXTERN(Interact);	
 	}
 	
+	// --- 게임 이벤트 알림 식별 (URENotifySubsystem::NotifyEvent에 전달)
+	namespace Event
+	{
+		namespace Interact
+		{
+			UE_DECLARE_GAMEPLAY_TAG_EXTERN(Succeeded);
+		}
+
+		namespace Timer
+		{
+			UE_DECLARE_GAMEPLAY_TAG_EXTERN(AlmostOver);
+		}
+
+		// 아직 구현 전인 시스템의 이벤트도 태그만 미리 등록
+		namespace Puzzle
+		{
+			UE_DECLARE_GAMEPLAY_TAG_EXTERN(Solved);
+		}
+
+		namespace Debug
+		{
+			UE_DECLARE_GAMEPLAY_TAG_EXTERN(Test);
+		}
+	}
+
 	// --- 상태 (수치 대신 상태를 태그로)
 	namespace State
 	{
