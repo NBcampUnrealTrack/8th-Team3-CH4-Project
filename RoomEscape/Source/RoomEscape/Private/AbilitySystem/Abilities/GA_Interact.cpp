@@ -3,7 +3,9 @@
 
 #include "AbilitySystem/Abilities/GA_Interact.h"
 
+#include "AbilitySystem/NativeGameplayTags.h"
 #include "Character/REPlayerCharacter.h"
+#include "Game/RENotifySubsystem.h"
 #include "Interaction/REInteractable.h"
 
 UGA_Interact::UGA_Interact()
@@ -26,6 +28,12 @@ void UGA_Interact::ActivateAbility(const FGameplayAbilitySpecHandle Handle, cons
 		if (Target && Target->Implements<UREInteractable>())
 		{
 			Char->ServerInteract(Target);   // 대상만 서버로 전달
+
+			if (URENotifySubsystem* NotifySubsystem = URENotifySubsystem::GetInstance(Char))
+			{
+				NotifySubsystem->NotifyEvent(RETag::Event::Interact::Succeeded,
+					FString::Printf(TEXT("%s이(가) %s와(과) 상호작용했습니다"), *Char->GetName(), *Target->GetName()));
+			}
 		}
 	}
 

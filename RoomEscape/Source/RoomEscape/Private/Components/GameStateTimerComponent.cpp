@@ -2,6 +2,8 @@
 
 
 #include "Components/GameStateTimerComponent.h"
+#include "AbilitySystem/NativeGameplayTags.h"
+#include "Game/RENotifySubsystem.h"
 #include "GameFramework/GameStateBase.h"
 #include "Net/UnrealNetwork.h"
 #include "UI/LocalWidgetManager.h"
@@ -16,6 +18,8 @@ UGameStateTimerComponent::UGameStateTimerComponent()
 
 	// ...
 	SetIsReplicatedByDefault(true);
+
+	WarningTime = FTimespan::FromSeconds(60.0);
 }
 
 void UGameStateTimerComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -161,8 +165,20 @@ void UGameStateTimerComponent::DecreaseRemainTime(double DeltaSeconds)
 		return;
 	}
 
+	const FTimespan PrevRemainTime = RemainTime;
+
 	// 남은 시간 1초 감소
 	RemainTime -= FTimespan::FromSeconds(DeltaSeconds);
+
+	// 시간 종료 임박 경계(WarningTime)를 통과하는 순간에만 1회 알림
+	if (PrevRemainTime > WarningTime && RemainTime <= WarningTime)
+	{
+		if (URENotifySubsystem* NotifySubsystem = URENotifySubsystem::GetInstance(this))
+		{
+			NotifySubsystem->NotifyEvent(RETag::Event::Timer::AlmostOver,
+				FString::Printf(TEXT("남은 시간이 %d초 이하입니다"), static_cast<int32>(WarningTime.GetTotalSeconds())));
+		}
+	}
 
 	// Listen Server 환경을 고려하여 남은 시간 변화 이벤트 실행
 	OnRep_RemainTime();

@@ -15,6 +15,29 @@ namespace RETag
 		UE_DEFINE_GAMEPLAY_TAG(Interact, "Ability.Interact");
 	}
 	
+	namespace Event
+	{
+		namespace Interact
+		{
+			UE_DEFINE_GAMEPLAY_TAG(Succeeded, "Event.Interact.Succeeded");
+		}
+
+		namespace Timer
+		{
+			UE_DEFINE_GAMEPLAY_TAG(AlmostOver, "Event.Timer.AlmostOver");
+		}
+
+		namespace Puzzle
+		{
+			UE_DEFINE_GAMEPLAY_TAG(Solved, "Event.Puzzle.Solved");
+		}
+
+		namespace Debug
+		{
+			UE_DEFINE_GAMEPLAY_TAG(Test, "Event.Debug.Test");
+		}
+	}
+
 	namespace State
 	{
 		UE_DEFINE_GAMEPLAY_TAG(Interacting, "State.Interacting");

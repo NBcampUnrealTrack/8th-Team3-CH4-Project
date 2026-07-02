@@ -47,6 +47,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"), ReplicatedUsing = OnRep_RemainTime)
 	FTimespan RemainTime;
 
+	// 시간 종료 임박 알림 기준 시간 (남은 시간이 이 값 이하로 내려가는 순간 1회 알림)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	FTimespan WarningTime;
+
 	// 제한 시간을 일정 시간 단위로 감소시키는 TimerHandle
 	UPROPERTY()
 	FTimerHandle TickTimer;
