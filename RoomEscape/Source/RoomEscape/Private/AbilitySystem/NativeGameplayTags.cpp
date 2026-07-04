@@ -30,6 +30,8 @@ namespace RETag
 		namespace Puzzle
 		{
 			UE_DEFINE_GAMEPLAY_TAG(Solved, "Event.Puzzle.Solved");
+			UE_DEFINE_GAMEPLAY_TAG(Failed, "Event.Puzzle.Failed");
+			UE_DEFINE_GAMEPLAY_TAG(TrapTriggered, "Event.Puzzle.TrapTriggered");
 		}
 
 		namespace Debug

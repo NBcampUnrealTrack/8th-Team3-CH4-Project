@@ -40,6 +40,8 @@ namespace RETag
 		namespace Puzzle
 		{
 			UE_DECLARE_GAMEPLAY_TAG_EXTERN(Solved);
+			UE_DECLARE_GAMEPLAY_TAG_EXTERN(Failed);
+			UE_DECLARE_GAMEPLAY_TAG_EXTERN(TrapTriggered);
 		}
 
 		namespace Debug
