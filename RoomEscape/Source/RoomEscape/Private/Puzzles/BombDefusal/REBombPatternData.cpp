@@ -47,9 +47,9 @@ bool UREBombPatternData::IsPatternValid() const
 				return false;
 			}
 		}
-		else if (Step.StepType == EREBombStepType::HoldButton)
+		else if (Step.StepType == EREBombStepType::ButtonState)
 		{
-			if (Step.ButtonId.IsNone() == true || Step.RequiredHoldSeconds <= 0.0f)
+			if (Step.ButtonId.IsNone() == true)
 			{
 				return false;
 			}
@@ -62,10 +62,10 @@ bool UREBombPatternData::IsPatternValid() const
 FText UREBombPatternData::BuildManualText() const
 {
 	FString CombinedRules;
-	for (int32 Index = 0; Index < ManualRules.Num(); ++Index)
+	for (const FText& ManualRule : ManualRules)
 	{
-		const FString RuleString = ManualRules[Index].ToString();
-		if (RuleString.IsEmpty() == true)
+		const FString RuleString = ManualRule.ToString();
+		if (RuleString.TrimStartAndEnd().IsEmpty() == true)
 		{
 			continue;
 		}
@@ -74,7 +74,7 @@ FText UREBombPatternData::BuildManualText() const
 		{
 			CombinedRules += TEXT("\n");
 		}
-		CombinedRules += FString::Printf(TEXT("%d. %s"), Index + 1, *RuleString);
+		CombinedRules += RuleString;
 	}
 
 	return FText::FromString(CombinedRules);

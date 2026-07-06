@@ -2,6 +2,7 @@
 #include "Blueprint/UserWidget.h"
 #include "Components/BoxComponent.h"
 #include "Components/TextBlock.h"
+#include "Components/TextRenderComponent.h"
 #include "Components/WidgetComponent.h"
 #include "GameFramework/Pawn.h"
 #include "Puzzles/Framework/REPuzzleManager.h"
@@ -25,6 +26,17 @@ AREPuzzleInteractableActor::AREPuzzleInteractableActor()
 	InteractionPromptWidgetComponent->SetRelativeLocation(InteractionPromptRelativeLocation);
 	InteractionPromptWidgetComponent->SetDrawSize(InteractionPromptDrawSize);
 
+	InteractionPromptTextRender = CreateDefaultSubobject<UTextRenderComponent>(TEXT("InteractionPromptTextRender"));
+	InteractionPromptTextRender->SetupAttachment(SceneRoot);
+	InteractionPromptTextRender->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	InteractionPromptTextRender->SetHiddenInGame(true);
+	InteractionPromptTextRender->SetVisibility(false);
+	InteractionPromptTextRender->SetHorizontalAlignment(EHTA_Center);
+	InteractionPromptTextRender->SetVerticalAlignment(EVRTA_TextCenter);
+	InteractionPromptTextRender->SetTextRenderColor(FColor::White);
+	InteractionPromptTextRender->SetWorldSize(NativePromptWorldSize);
+	InteractionPromptTextRender->SetRelativeLocation(InteractionPromptRelativeLocation);
+
 	InteractionPromptText = FText::FromString(TEXT("상호작용"));
 }
 
@@ -40,9 +52,16 @@ void AREPuzzleInteractableActor::BeginPlay()
 		{
 			InteractionPromptWidgetComponent->SetWidgetClass(InteractionPromptWidgetClass);
 		}
-		SetInteractionPromptVisible(false);
-		RefreshInteractionPromptText();
 	}
+
+	if (IsValid(InteractionPromptTextRender) == true)
+	{
+		InteractionPromptTextRender->SetRelativeLocation(InteractionPromptRelativeLocation);
+		InteractionPromptTextRender->SetWorldSize(NativePromptWorldSize);
+	}
+
+	SetInteractionPromptVisible(false);
+	RefreshInteractionPromptText();
 
 	if (IsValid(InteractionCollision) == true)
 	{
@@ -106,18 +125,37 @@ void AREPuzzleInteractableActor::OnInteractionPromptEndOverlap(UPrimitiveCompone
 bool AREPuzzleInteractableActor::ShouldShowPromptForActor(AActor* Actor) const
 {
 	const APawn* Pawn = Cast<APawn>(Actor);
-	return IsValid(Pawn) == true && Pawn->IsLocallyControlled() == true && IsValid(InteractionPromptWidgetClass) == true;
+	const bool bHasPromptPresenter = IsValid(InteractionPromptWidgetClass) == true || bUseNativePromptFallback == true;
+	return IsValid(Pawn) == true && Pawn->IsLocallyControlled() == true && bHasPromptPresenter == true;
 }
 
 void AREPuzzleInteractableActor::SetInteractionPromptVisible(bool bVisible)
 {
-	if (IsValid(InteractionPromptWidgetComponent) == false || IsValid(InteractionPromptWidgetClass) == false)
+	const bool bUseWidgetPrompt = IsValid(InteractionPromptWidgetComponent) == true && IsValid(InteractionPromptWidgetClass) == true;
+	const bool bUseTextFallback = bUseWidgetPrompt == false && bUseNativePromptFallback == true && IsValid(InteractionPromptTextRender) == true;
+
+	if (bUseWidgetPrompt == true)
 	{
-		return;
+		InteractionPromptWidgetComponent->SetVisibility(bVisible);
+		InteractionPromptWidgetComponent->SetHiddenInGame(!bVisible);
+	}
+	else if (IsValid(InteractionPromptWidgetComponent) == true)
+	{
+		InteractionPromptWidgetComponent->SetVisibility(false);
+		InteractionPromptWidgetComponent->SetHiddenInGame(true);
 	}
 
-	InteractionPromptWidgetComponent->SetVisibility(bVisible);
-	InteractionPromptWidgetComponent->SetHiddenInGame(!bVisible);
+	if (bUseTextFallback == true)
+	{
+		InteractionPromptTextRender->SetVisibility(bVisible);
+		InteractionPromptTextRender->SetHiddenInGame(!bVisible);
+	}
+	else if (IsValid(InteractionPromptTextRender) == true)
+	{
+		InteractionPromptTextRender->SetVisibility(false);
+		InteractionPromptTextRender->SetHiddenInGame(true);
+	}
+
 	if (bVisible == true)
 	{
 		RefreshInteractionPromptText();
@@ -126,9 +164,19 @@ void AREPuzzleInteractableActor::SetInteractionPromptVisible(bool bVisible)
 
 void AREPuzzleInteractableActor::RefreshInteractionPromptText() const
 {
+	if (IsValid(InteractionPromptTextRender) == true)
+	{
+		InteractionPromptTextRender->SetText(InteractionPromptText);
+	}
+
 	if (IsValid(InteractionPromptWidgetComponent) == false)
 	{
 		return;
+	}
+
+	if (IsValid(InteractionPromptWidgetComponent->GetUserWidgetObject()) == false && IsValid(InteractionPromptWidgetClass) == true)
+	{
+		InteractionPromptWidgetComponent->InitWidget();
 	}
 
 	UUserWidget* PromptWidget = InteractionPromptWidgetComponent->GetUserWidgetObject();

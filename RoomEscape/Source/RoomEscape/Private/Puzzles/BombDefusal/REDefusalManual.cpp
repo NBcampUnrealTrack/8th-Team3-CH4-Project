@@ -13,7 +13,10 @@ AREDefusalManual::AREDefusalManual()
 	ManualMesh->SetupAttachment(SceneRoot);
 	ManualMesh->SetCollisionProfileName(TEXT("BlockAll"));
 
-	InteractionCollision->SetBoxExtent(FVector(70.0, 70.0, 70.0));
+	InteractionCollision->SetBoxExtent(FVector(110.0, 110.0, 90.0));
+	InteractionPromptText = FText::FromString(TEXT("설명서 보기"));
+	InteractionPromptRelativeLocation = FVector(0.0, 0.0, 100.0);
+
 }
 
 void AREDefusalManual::SetBombManager(AREBombDefusalManager* InManager)

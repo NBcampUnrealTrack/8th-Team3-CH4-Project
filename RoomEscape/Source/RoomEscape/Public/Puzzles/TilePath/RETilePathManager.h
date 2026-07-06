@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "CoreMinimal.h"
 #include "Puzzles/Framework/REPuzzleManager.h"
@@ -48,9 +48,6 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category = "Tile Path Puzzle")
 	FRETilePathTileJudgedSignature OnTilePathTileJudged;
-
-	UPROPERTY(BlueprintAssignable, Category = "Tile Path Puzzle")
-	FRETilePathPawnSignature OnTilePathWalkerReset;
 
 	UPROPERTY(BlueprintAssignable, Category = "Tile Path Puzzle")
 	FRETilePathPawnSignature OnTilePathCleared;
@@ -107,9 +104,6 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Tile Path Puzzle|Rule", meta = (AllowPrivateAccess = "true"))
 	bool bRequireWalkerInsidePuzzleArea = false;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Tile Path Puzzle|Rule", meta = (AllowPrivateAccess = "true"))
-	bool bKeepRevealedMovesAfterFailure = true;
-
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Tile Path Puzzle|Countdown", meta = (ClampMin = "1", AllowPrivateAccess = "true"))
 	int32 CountdownStartNumber = 3;
 
@@ -130,15 +124,6 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Tile Path Puzzle|Timer", meta = (ClampMin = "1.0", EditCondition = "bUseTimeLimit", AllowPrivateAccess = "true"))
 	float TimeLimitSeconds = 90.0f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Tile Path Puzzle|Reset", meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<AActor> ResetPointActor;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Tile Path Puzzle|Reset", meta = (ClampMin = "0.0", AllowPrivateAccess = "true"))
-	float ResetDelaySeconds = 1.0f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Tile Path Puzzle|Reset", meta = (ClampMin = "0.0", AllowPrivateAccess = "true"))
-	float PostResetInputIgnoreSeconds = 0.35f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Tile Path Puzzle|Reward", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<AREPuzzleHintActor> HintActor;
@@ -177,17 +162,9 @@ protected:
 	TArray<TObjectPtr<ARETilePathTile>> TileActors;
 
 	UPROPERTY(Transient)
-	TObjectPtr<APawn> PendingResetPawn;
-
-	UPROPERTY(Transient)
 	TObjectPtr<APlayerController> GuideController;
 
-	TArray<TWeakObjectPtr<APawn>> ResetProtectedPawns;
-	TArray<double> ResetProtectionEndTimes;
-
-	FTimerHandle PuzzleTimerHandle;
-	FTimerHandle ResetTimerHandle;
-	FTimerHandle CountdownTimerHandle;
+	FTimerHandle PuzzleTimerHandle;	FTimerHandle CountdownTimerHandle;
 	FTimerHandle GameStartTimerHandle;
 
 public:
@@ -208,15 +185,6 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Tile Path Puzzle")
 	void HandleTileStepped(ARETilePathTile* Tile, APawn* SteppingPawn);
-
-	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Tile Path Puzzle")
-	void HandleWalkerFell(APawn* FallingPawn);
-
-	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Tile Path Puzzle")
-	void ResetPawnToResetPoint(APawn* PawnToReset);
-
-	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Tile Path Puzzle")
-	void ResetTilePathPuzzle(bool bResetGuideProgress = true);
 
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Tile Path Puzzle")
 	void RegisterTile(ARETilePathTile* Tile);
@@ -344,9 +312,6 @@ protected:
 	void MulticastHandlePuzzleFailed(APawn* Pawn, FIntPoint TileCoordinate);
 
 	UFUNCTION(NetMulticast, Reliable)
-	void MulticastHandleWalkerReset(APawn* Pawn);
-
-	UFUNCTION(NetMulticast, Reliable)
 	void MulticastHandlePuzzleCleared(APawn* Pawn);
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "Tile Path Puzzle")
@@ -354,9 +319,6 @@ protected:
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "Tile Path Puzzle")
 	void ReceivePuzzleFailed(APawn* Pawn, FIntPoint TileCoordinate);
-
-	UFUNCTION(BlueprintImplementableEvent, Category = "Tile Path Puzzle")
-	void ReceiveWalkerReset(APawn* Pawn);
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "Tile Path Puzzle")
 	void ReceivePuzzleCleared(APawn* Pawn);
@@ -378,17 +340,10 @@ private:
 	void BroadcastParticipantsChanged();
 	void StopPuzzleTimer();
 	void OnPuzzleTimerTick();
-	void FailAndReset(APawn* FailedPawn, FIntPoint FailedCoordinate);
-	void FinishReset();
 	void ClearPuzzle();
-	void TeleportPawnToResetPoint(APawn* PawnToReset) const;
-	void AddResetProtection(APawn* Pawn);
-	bool IsResetProtected(APawn* Pawn) const;
-	void CleanupResetProtection();
 	bool IsPawnInsidePuzzleArea(APawn* Pawn) const;
 	bool IsAdjacentStep(FIntPoint From, FIntPoint To) const;
 	bool BuildRevealedMove(int32 StepIndex, FName QuestionId, FRETilePathRevealedMove& OutRevealedMove) const;
 	ERETilePathDirection CalculateDirection(FIntPoint From, FIntPoint To) const;
-	FTransform GetResetTransform() const;
 	int32 FindSafePathIndex(FIntPoint Coordinate) const;
 };

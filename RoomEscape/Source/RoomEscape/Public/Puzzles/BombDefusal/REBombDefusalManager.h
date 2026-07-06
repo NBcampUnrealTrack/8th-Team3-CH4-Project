@@ -9,6 +9,8 @@ class UREBombPatternData;
 class AREBombDevice;
 class AREBombWire;
 class AREBombButton;
+class UREBombFeedbackWidget;
+class APlayerController;
 class APlayerState;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FREBombTimeChangedSignature, float, RemainingTimeSeconds, float, TimeLimitSeconds);
@@ -50,6 +52,15 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Bomb Defusal|Rule", meta = (ClampMin = "0.0", AllowPrivateAccess = "true"))
 	float ResetDelaySeconds = 2.0f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Bomb Defusal|Rule", meta = (ClampMin = "0.0", AllowPrivateAccess = "true"))
+	float FailureRestrictionSeconds = 60.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Bomb Defusal|Feedback", meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<UREBombFeedbackWidget> FeedbackWidgetClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Bomb Defusal|Feedback", meta = (ClampMin = "0.0", AllowPrivateAccess = "true"))
+	float FeedbackWidgetDisplaySeconds = 0.0f;
+
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, ReplicatedUsing = OnRep_CurrentStepIndex, Category = "Bomb Defusal|Runtime", meta = (AllowPrivateAccess = "true"))
 	int32 CurrentStepIndex = 0;
 
@@ -64,6 +75,9 @@ protected:
 
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Bomb Defusal|Runtime", meta = (AllowPrivateAccess = "true"))
 	TArray<TObjectPtr<AREBombButton>> Buttons;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UREBombFeedbackWidget> ActiveFeedbackWidget;
 
 	FTimerHandle BombTimerHandle;
 	FTimerHandle FailureResetTimerHandle;
@@ -88,6 +102,9 @@ public:
 	float GetTimeLimitSeconds() const;
 
 	UFUNCTION(BlueprintPure, Category = "Bomb Defusal")
+	float GetFailureRestrictionSeconds() const;
+
+	UFUNCTION(BlueprintPure, Category = "Bomb Defusal")
 	bool IsBombRunning() const;
 
 	UFUNCTION(BlueprintPure, Category = "Bomb Defusal")
@@ -98,8 +115,7 @@ public:
 	void RegisterButton(AREBombButton* InButton);
 
 	bool SubmitWireCut(AREBombWire* Wire, AActor* Interactor);
-	bool SubmitButtonPress(AREBombButton* Button, AActor* Interactor);
-	bool SubmitButtonRelease(AREBombButton* Button, AActor* Interactor);
+	bool SubmitButtonToggle(AREBombButton* Button, AActor* Interactor);
 
 protected:
 	virtual bool CanActivatePuzzle() const override;
@@ -114,8 +130,8 @@ protected:
 	UFUNCTION()
 	void OnRep_RemainingTimeSeconds();
 
-	UFUNCTION(NetMulticast, Unreliable)
-	void MulticastBombInputResult(AActor* SourceActor, bool bCorrect, const FText& ResultMessage);
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastBombInputResult(AActor* SourceActor, APlayerState* TargetPlayerState, bool bCorrect, const FText& ResultMessage);
 
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastBombRuntimeReset();
@@ -135,12 +151,17 @@ private:
 	void TickTimer();
 	void SetCurrentStepIndex(int32 NewStepIndex);
 	void SetRemainingTimeSeconds(float NewRemainingTimeSeconds);
-	void AdvanceStep(AActor* SourceActor, const FText& ResultMessage);
-	void CompleteBomb(AActor* SourceActor);
-	void FailBomb(AActor* SourceActor, const FText& ResultMessage);
+	void AdvanceStep(AActor* SourceActor, AActor* Interactor, const FText& ResultMessage);
+	void CompleteBomb(AActor* SourceActor, AActor* Interactor);
+	void FailBomb(AActor* SourceActor, AActor* Interactor, const FText& ResultMessage);
 	void ResetAfterFailure();
+	void ShowFeedbackWidgetLocal(AActor* SourceActor, APlayerState* TargetPlayerState, bool bCorrect, const FText& ResultMessage);
+	APlayerController* ResolveLocalPlayerController(APlayerState* TargetPlayerState) const;
+	FText BuildSuccessFeedbackMessage() const;
+	FText BuildSolvedFeedbackMessage() const;
+	FText BuildFailureFeedbackMessage() const;
 	bool CanAcceptInput() const;
 	bool ValidateCurrentWireStep(const AREBombWire* Wire, FText& OutFailureMessage) const;
-	bool ValidateCurrentButtonStep(const AREBombButton* Button, FText& OutFailureMessage) const;
+	bool ValidateCurrentButtonStep(const AREBombButton* Button, bool bNextPressed, FText& OutFailureMessage) const;
 	APlayerState* ResolvePlayerState(AActor* Actor) const;
 };
