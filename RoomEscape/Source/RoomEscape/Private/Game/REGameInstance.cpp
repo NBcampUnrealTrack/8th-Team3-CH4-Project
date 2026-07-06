@@ -13,10 +13,7 @@ void UREGameInstance::Init()
 {
 	Super::Init();
 
-	if (UREItemDataSubsystem* ItemDataSubsystem = GetSubsystem<UREItemDataSubsystem>())
-	{
-		ItemDataSubsystem->SetItemDataTable(ItemDataTable);
-	}
+	SetItemDataTable(ItemDataTable);
 	
 	// Get Null to connect session interface
 	if (IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld()))
@@ -31,6 +28,17 @@ void UREGameInstance::Init()
 		}
 	}
 }
+
+void UREGameInstance::SetItemDataTable(UDataTable* NewItemDataTable)
+{
+	ItemDataTable = NewItemDataTable;
+
+	if (UREItemDataSubsystem* ItemDataSubsystem = GetSubsystem<UREItemDataSubsystem>())
+	{
+		ItemDataSubsystem->SetItemDataTable(ItemDataTable);
+	}
+}
+
 
 // -- 방 만들기 --
 
