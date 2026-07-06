@@ -24,6 +24,8 @@ public class RoomEscape : ModuleRules
 			"GameplayTags",
 			// for UI
 			"UMG",
+			"CommonUI",
+			"CommonInput",
 			// Add Custom Implement Modules
 			"WidgetUtility"
 		});
