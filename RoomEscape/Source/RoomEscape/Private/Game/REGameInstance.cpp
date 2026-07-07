@@ -42,7 +42,7 @@ void UREGameInstance::SetItemDataTable(UDataTable* NewItemDataTable)
 
 // -- 방 만들기 --
 
-void UREGameInstance::HostGame(FString RoomName)
+void UREGameInstance::HostGame()
 {
 	if (TSharedPtr<IOnlineSession> SharedSession = SessionInterface.Pin())
 	{
@@ -51,8 +51,6 @@ void UREGameInstance::HostGame(FString RoomName)
 		SessionSettings.NumPublicConnections = 2;	// 2인 제한
 		SessionSettings.bShouldAdvertise = true;
 		SessionSettings.bUsesPresence = true;
-		
-		SessionSettings.Set(FName("SERVER_NAME"), RoomName, EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
 		
 		SharedSession->CreateSession(0, FName("RoomEscapeSession"), SessionSettings);
 	}
@@ -68,7 +66,7 @@ void UREGameInstance::OnCreateSessionComplete(FName SessionName, bool bWasSucces
 
 // -- 방 찾기 --
 
-void UREGameInstance::FindGames()
+void UREGameInstance::JoinGame()
 {
 	if (TSharedPtr<IOnlineSession> SharedSession = SessionInterface.Pin())
 	{
@@ -82,42 +80,12 @@ void UREGameInstance::FindGames()
 
 void UREGameInstance::OnFindSessionsComplete(bool bWasSuccessful)
 {
-	TArray<FServerInfo> FoundServers;
-	
-	if (bWasSuccessful && SessionSearch.IsValid())
+	if (bWasSuccessful && SessionSearch->SearchResults.Num() > 0)
 	{
-		for (int32 i = 0; i < SessionSearch->SearchResults.Num(); i++)
+		if (TSharedPtr<IOnlineSession> SharedSession = SessionInterface.Pin())
 		{
-			const FOnlineSessionSearchResult& Result = SessionSearch->SearchResults[i];
-			FServerInfo NewServer;
-			NewServer.SearchIndex = i;
-			NewServer.Ping = Result.PingInMs;
-			
-			FString FoundName;
-			
-			if (Result.Session.SessionSettings.Get(FName("SERVER_NAME"), FoundName))
-			{
-				NewServer.ServerName = FoundName;
-			}
-			else
-			{
-				NewServer.ServerName = TEXT("이름 없는 방");
-			}
-			
-			FoundServers.Add(NewServer);
-		}
-	}
-	
-	OnSearchCompleted.Broadcast(FoundServers);
-}
-
-void UREGameInstance::JoinSelectedGame(int32 SessionIndex)
-{
-	if (TSharedPtr<IOnlineSession> SharedSession = SessionInterface.Pin())
-	{
-		if (SessionSearch.IsValid() && SessionSearch->SearchResults.IsValidIndex(SessionIndex))
-		{
-			SharedSession->JoinSession(0, FName("EscapeSession"), SessionSearch->SearchResults[SessionIndex]);
+			// 가장 먼저 찾은 방에 접속 시도
+			SharedSession->JoinSession(0, FName("EscapeSession"), SessionSearch->SearchResults[0]);
 		}
 	}
 }
