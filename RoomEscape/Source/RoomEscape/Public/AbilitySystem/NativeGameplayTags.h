@@ -20,7 +20,7 @@ namespace RETag
 	// -- 어빌리티 식별
 	namespace Ability
 	{
-		UE_DECLARE_GAMEPLAY_TAG_EXTERN(Interact);	
+		UE_DECLARE_GAMEPLAY_TAG_EXTERN(Interact);
 	}
 	
 	// --- 게임 이벤트 알림 식별 (URENotifySubsystem::NotifyEvent에 전달)
