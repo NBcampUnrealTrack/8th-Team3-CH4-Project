@@ -6,7 +6,6 @@
 #include "InputCoreTypes.h"
 #include "REPlayerCharacter.generated.h"
 
-class USpotLightComponent;
 struct FInputActionValue;
 class UInputAction;
 class UInputMappingContext;
@@ -21,15 +20,9 @@ class ROOMESCAPE_API AREPlayerCharacter : public ACharacter, public IAbilitySyst
 	GENERATED_BODY()
 public:
 	AREPlayerCharacter();
-	
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
-	
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerInteract(AActor* Target);
-	
-	UFUNCTION(Server, Reliable, WithValidation)
-	void ServerToggleFlashlight();
-	
 	AActor* TraceForInteractable(FHitResult& OutHit) const;
 
 protected:
@@ -38,17 +31,12 @@ protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void OnRep_PlayerState() override;
-	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 
 	void Input_Interact();
 	void Input_Move(const FInputActionValue& Value);
 	void Input_Look(const FInputActionValue& Value);
 	void Input_JumpStarted();
 	void Input_JumpCompleted();
-	void Input_Flashlight();
-	
-	UFUNCTION()
-	void OnRep_FlashlightOn();
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Camera")
 	TObjectPtr<UCameraComponent> FirstPersonCamera;
@@ -67,9 +55,6 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category="Input")
 	TObjectPtr<UInputAction> JumpAction;
-	
-	UPROPERTY(EditDefaultsOnly, Category="Input")
-	TObjectPtr<UInputAction> FlashlightAction;
 
 	UPROPERTY(EditDefaultsOnly, Category="Input|Jump")
 	bool bRegisterJumpMappingAtRuntime = true;
@@ -106,12 +91,6 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category="Ability")
 	TArray<TSubclassOf<UREGameplayAbility>> DefaultAbilities;
-	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Flashlight")
-	TObjectPtr<USpotLightComponent> FlashlightComponent;
-	
-	UPROPERTY(ReplicatedUsing=OnRep_FlashlightOn, VisibleAnywhere, BlueprintReadOnly, Category="Flashlight")
-	bool bFlashlightOn = false;
 
 private:
 	void InitAbilityActorInfo();
@@ -120,5 +99,4 @@ private:
 	void RegisterJumpMappingContext();
 	void UnregisterJumpMappingContext();
 	UInputAction* GetJumpInputAction() const;
-	void ApplyFlashlightVisual();
 };

@@ -11,11 +11,7 @@
 #include "GameFramework/PlayerController.h"
 #include "InputAction.h"
 #include "InputMappingContext.h"
-#include "AbilitySystem/NativeGameplayTags.h"
-#include "AbilitySystem/Abilities/GA_Flashlight.h"
-#include "Components/SpotLightComponent.h"
 #include "Interaction/REInteractable.h"
-#include "Net/UnrealNetwork.h"
 #include "Puzzles/Framework/REPuzzleInteractableActor.h"
 
 AREPlayerCharacter::AREPlayerCharacter()
@@ -32,14 +28,6 @@ AREPlayerCharacter::AREPlayerCharacter()
 	FirstPersonArms->SetOnlyOwnerSee(true);
 	FirstPersonArms->bCastDynamicShadow = false;
 	FirstPersonArms->CastShadow = false;
-	
-	FlashlightComponent = CreateDefaultSubobject<USpotLightComponent>(TEXT("FlashlightComponent"));
-	FlashlightComponent->SetupAttachment(FirstPersonCamera);
-	FlashlightComponent->SetVisibility(false);
-	FlashlightComponent->Intensity = 5000.f;
-	FlashlightComponent->OuterConeAngle = 25.f;
-	FlashlightComponent->AttenuationRadius = 1500.f;
-	FlashlightComponent->CastShadows = false;
 
 	GetMesh()->SetOwnerNoSee(true);
 
@@ -103,29 +91,6 @@ bool AREPlayerCharacter::ServerInteract_Validate(AActor* Target)
 	return true;
 }
 
-void AREPlayerCharacter::ServerToggleFlashlight_Implementation()
-{
-	bFlashlightOn = !bFlashlightOn;
-	ApplyFlashlightVisual();
-	
-	if (AbilitySystemComp)
-	{
-		if (bFlashlightOn)
-		{
-			AbilitySystemComp->AddLooseGameplayTag(RETag::State::Flashlight::On);
-		}
-		else
-		{
-			AbilitySystemComp->RemoveLooseGameplayTag(RETag::State::Flashlight::On);
-		}
-	}
-}
-
-bool AREPlayerCharacter::ServerToggleFlashlight_Validate()
-{
-	return true;
-}
-
 AActor* AREPlayerCharacter::TraceForInteractable(FHitResult& OutHit) const
 {
 	if (!FirstPersonCamera)
@@ -170,10 +135,6 @@ void AREPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 			EIC->BindAction(EffectiveJumpAction, ETriggerEvent::Completed, this, &AREPlayerCharacter::Input_JumpCompleted);
 			EIC->BindAction(EffectiveJumpAction, ETriggerEvent::Canceled, this, &AREPlayerCharacter::Input_JumpCompleted);
 		}
-		if (FlashlightAction)
-		{
-			EIC->BindAction(FlashlightAction, ETriggerEvent::Started, this, &AREPlayerCharacter::Input_Flashlight);
-		}
 	}
 
 	RegisterJumpMappingContext();
@@ -196,12 +157,6 @@ void AREPlayerCharacter::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();
 	InitAbilityActorInfo();
-}
-
-void AREPlayerCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	DOREPLIFETIME(AREPlayerCharacter, bFlashlightOn);
 }
 
 void AREPlayerCharacter::Input_Interact()
@@ -244,19 +199,6 @@ void AREPlayerCharacter::Input_JumpStarted()
 void AREPlayerCharacter::Input_JumpCompleted()
 {
 	StopJumping();
-}
-
-void AREPlayerCharacter::Input_Flashlight()
-{
-	if (AbilitySystemComp)
-	{
-		AbilitySystemComp->TryActivateAbilityByClass(UGA_Flashlight::StaticClass());
-	}
-}
-
-void AREPlayerCharacter::OnRep_FlashlightOn()
-{
-	ApplyFlashlightVisual();
 }
 
 void AREPlayerCharacter::InitAbilityActorInfo()
@@ -359,12 +301,4 @@ void AREPlayerCharacter::UnregisterJumpMappingContext()
 UInputAction* AREPlayerCharacter::GetJumpInputAction() const
 {
 	return IsValid(JumpAction) == true ? JumpAction.Get() : NativeJumpAction.Get();
-}
-
-void AREPlayerCharacter::ApplyFlashlightVisual()
-{
-	if (FlashlightComponent)
-	{
-		FlashlightComponent->SetVisibility(bFlashlightOn);
-	}
 }
