@@ -12,7 +12,10 @@ AREBombWire::AREBombWire()
 	WireMesh->SetupAttachment(SceneRoot);
 	WireMesh->SetCollisionProfileName(TEXT("BlockAll"));
 
-	InteractionCollision->SetBoxExtent(FVector(30.0, 30.0, 60.0));
+	InteractionCollision->SetBoxExtent(FVector(80.0, 80.0, 80.0));
+	InteractionPromptText = FText::FromString(TEXT("선 자르기"));
+	InteractionPromptRelativeLocation = FVector(0.0, 0.0, 90.0);
+
 }
 
 void AREBombWire::BeginPlay()

@@ -1,9 +1,6 @@
-﻿#include "Puzzles/TilePath/RETilePathManager.h"
+#include "Puzzles/TilePath/RETilePathManager.h"
 #include "Components/BoxComponent.h"
-#include "GameFramework/Character.h"
-#include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Pawn.h"
-#include "GameFramework/PawnMovementComponent.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/PlayerState.h"
 #include "Net/UnrealNetwork.h"
@@ -208,11 +205,6 @@ void ARETilePathManager::HandleTileStepped(ARETilePathTile* Tile, APawn* Steppin
 		return;
 	}
 
-	CleanupResetProtection();
-	if (IsResetProtected(SteppingPawn) == true)
-	{
-		return;
-	}
 
 	if (IsActive() == false || bSessionStarted == false || IsValid(WalkerPawn) == false || WalkerPawn != SteppingPawn)
 	{
@@ -250,88 +242,9 @@ void ARETilePathManager::HandleTileStepped(ARETilePathTile* Tile, APawn* Steppin
 		FailedTile->ApplyServerTileState(ERETilePathTileState::Failed, FailedTile->IsWalkable());
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("[TilePath] Reset requested by wrong tile. Pawn=%s Tile=(%d,%d) CurrentStep=%d Revealed=%d"), *GetNameSafe(SteppingPawn), TileCoordinate.X, TileCoordinate.Y, CurrentStepIndex, RevealedMoveCount);
+	UE_LOG(LogTemp, Warning, TEXT("[TilePath] Wrong tile stepped. Pawn=%s Tile=(%d,%d) CurrentStep=%d Revealed=%d"), *GetNameSafe(SteppingPawn), TileCoordinate.X, TileCoordinate.Y, CurrentStepIndex, RevealedMoveCount);
 	MulticastHandleTileJudged(SteppingPawn, TileCoordinate, false);
-	FailAndReset(SteppingPawn, TileCoordinate);
-}
-
-void ARETilePathManager::HandleWalkerFell(APawn* FallingPawn)
-{
-	if (HasAuthority() == false || IsValid(FallingPawn) == false)
-	{
-		return;
-	}
-
-	CleanupResetProtection();
-	if (IsResetProtected(FallingPawn) == true)
-	{
-		return;
-	}
-
-	if (IsFailed() == true && PendingResetPawn == FallingPawn)
-	{
-		return;
-	}
-
-	const bool bActiveWalkerFell = IsActive() == true && bSessionStarted == true && IsValid(WalkerPawn) == true && WalkerPawn == FallingPawn;
-	if (bActiveWalkerFell == true)
-	{
-		const FIntPoint FailedCoordinate = SafePath.IsValidIndex(CurrentStepIndex) == true ? SafePath[CurrentStepIndex] : FIntPoint::ZeroValue;
-		UE_LOG(LogTemp, Warning, TEXT("[TilePath] Reset requested by fall volume during puzzle. Pawn=%s"), *GetNameSafe(FallingPawn));
-		FailAndReset(FallingPawn, FailedCoordinate);
-		return;
-	}
-
-	UE_LOG(LogTemp, Warning, TEXT("[TilePath] Reset requested by fall volume safety reset. Pawn=%s"), *GetNameSafe(FallingPawn));
-	ResetPawnToResetPoint(FallingPawn);
-}
-
-void ARETilePathManager::ResetPawnToResetPoint(APawn* PawnToReset)
-{
-	if (HasAuthority() == false || IsValid(PawnToReset) == false)
-	{
-		return;
-	}
-
-	AddResetProtection(PawnToReset);
-	TeleportPawnToResetPoint(PawnToReset);
-	MulticastHandleWalkerReset(PawnToReset);
-}
-
-void ARETilePathManager::ResetTilePathPuzzle(bool bResetGuideProgress)
-{
-	if (HasAuthority() == false)
-	{
-		return;
-	}
-
-	StopPuzzleTimer();
-	StopSessionCountdown();
-	PendingResetPawn = nullptr;
-	WalkerPawn = nullptr;
-	WalkerPlayerState = nullptr;
-	GuideController = nullptr;
-	GuidePlayerState = nullptr;
-	SetSessionStarted(false);
-	SetSessionPhase(ERETilePathSessionPhase::Waiting);
-	SetCountdownNumber(-1);
-	BroadcastParticipantsChanged();
-	SetCurrentStepIndex(0);
-
-	if (bResetGuideProgress == true)
-	{
-		SetRevealedMoveCount(0);
-	}
-
-	SetRemainingTimeSeconds(bUseTimeLimit == true ? TimeLimitSeconds : 0.0f);
-	SetPuzzleState(EREPuzzleState::Active);
-
-	if (IsValid(HintActor) == true)
-	{
-		HintActor->SetUnlocked(false);
-	}
-
-	RefreshTileStates();
+	MulticastHandlePuzzleFailed(SteppingPawn, TileCoordinate);
 }
 
 void ARETilePathManager::RegisterTile(ARETilePathTile* Tile)
@@ -711,7 +624,6 @@ void ARETilePathManager::HandlePuzzleLocked()
 {
 	StopPuzzleTimer();
 	StopSessionCountdown();
-	PendingResetPawn = nullptr;
 	WalkerPawn = nullptr;
 	WalkerPlayerState = nullptr;
 	GuideController = nullptr;
@@ -804,11 +716,6 @@ void ARETilePathManager::MulticastHandlePuzzleFailed_Implementation(APawn* Pawn,
 	ReceivePuzzleFailed(Pawn, TileCoordinate);
 }
 
-void ARETilePathManager::MulticastHandleWalkerReset_Implementation(APawn* Pawn)
-{
-	OnTilePathWalkerReset.Broadcast(Pawn);
-	ReceiveWalkerReset(Pawn);
-}
 
 void ARETilePathManager::MulticastHandlePuzzleCleared_Implementation(APawn* Pawn)
 {
@@ -1045,57 +952,10 @@ void ARETilePathManager::OnPuzzleTimerTick()
 
 	if (RemainingTimeSeconds <= 0.0f)
 	{
-		FailAndReset(WalkerPawn, SafePath.IsValidIndex(CurrentStepIndex) == true ? SafePath[CurrentStepIndex] : FIntPoint::ZeroValue);
+		StopPuzzleTimer();
+		MarkFailed();
+		MulticastHandlePuzzleFailed(WalkerPawn, SafePath.IsValidIndex(CurrentStepIndex) == true ? SafePath[CurrentStepIndex] : FIntPoint::ZeroValue);
 	}
-}
-
-void ARETilePathManager::FailAndReset(APawn* FailedPawn, FIntPoint FailedCoordinate)
-{
-	if (HasAuthority() == false || IsSolved() == true || IsFailed() == true || IsValid(FailedPawn) == false)
-	{
-		return;
-	}
-
-	StopPuzzleTimer();
-	PendingResetPawn = FailedPawn;
-	MarkFailed();
-	MulticastHandlePuzzleFailed(FailedPawn, FailedCoordinate);
-
-	if (ResetDelaySeconds <= 0.0f)
-	{
-		FinishReset();
-		return;
-	}
-
-	GetWorldTimerManager().SetTimer(ResetTimerHandle, this, &ARETilePathManager::FinishReset, ResetDelaySeconds, false);
-}
-
-void ARETilePathManager::FinishReset()
-{
-	if (HasAuthority() == false)
-	{
-		return;
-	}
-
-	APawn* ResetPawn = IsValid(PendingResetPawn) == true ? PendingResetPawn.Get() : WalkerPawn.Get();
-	AddResetProtection(ResetPawn);
-	TeleportPawnToResetPoint(ResetPawn);
-	PendingResetPawn = nullptr;
-	SetCurrentStepIndex(0);
-
-	if (bKeepRevealedMovesAfterFailure == false)
-	{
-		SetRevealedMoveCount(0);
-	}
-
-	SetRemainingTimeSeconds(bUseTimeLimit == true ? TimeLimitSeconds : 0.0f);
-	SetPuzzleState(EREPuzzleState::Active);
-	RefreshTileStates();
-	if (bSessionStarted == true)
-	{
-		StartPuzzleTimer();
-	}
-	MulticastHandleWalkerReset(ResetPawn);
 }
 
 void ARETilePathManager::ClearPuzzle()
@@ -1117,92 +977,6 @@ void ARETilePathManager::ClearPuzzle()
 	MulticastHandlePuzzleCleared(WalkerPawn);
 }
 
-void ARETilePathManager::TeleportPawnToResetPoint(APawn* PawnToReset) const
-{
-	if (IsValid(PawnToReset) == false)
-	{
-		return;
-	}
-
-	if (UPawnMovementComponent* MovementComponent = PawnToReset->GetMovementComponent())
-	{
-		MovementComponent->StopMovementImmediately();
-	}
-
-	const FTransform ResetTransform = GetResetTransform();
-	PawnToReset->SetActorLocationAndRotation(ResetTransform.GetLocation(), ResetTransform.GetRotation().Rotator(), false, nullptr, ETeleportType::TeleportPhysics);
-
-	if (ACharacter* Character = Cast<ACharacter>(PawnToReset))
-	{
-		if (UCharacterMovementComponent* CharacterMovement = Character->GetCharacterMovement())
-		{
-			CharacterMovement->StopMovementImmediately();
-			CharacterMovement->SetMovementMode(MOVE_Walking);
-		}
-	}
-
-	PawnToReset->ForceNetUpdate();
-}
-
-void ARETilePathManager::AddResetProtection(APawn* Pawn)
-{
-	if (IsValid(Pawn) == false || PostResetInputIgnoreSeconds <= 0.0f)
-	{
-		return;
-	}
-
-	CleanupResetProtection();
-
-	const double EndTime = GetWorld() ? GetWorld()->GetTimeSeconds() + PostResetInputIgnoreSeconds : 0.0;
-	for (int32 Index = 0; Index < ResetProtectedPawns.Num(); ++Index)
-	{
-		if (ResetProtectedPawns[Index].Get() == Pawn)
-		{
-			ResetProtectionEndTimes[Index] = EndTime;
-			return;
-		}
-	}
-
-	ResetProtectedPawns.Add(Pawn);
-	ResetProtectionEndTimes.Add(EndTime);
-}
-
-bool ARETilePathManager::IsResetProtected(APawn* Pawn) const
-{
-	if (IsValid(Pawn) == false)
-	{
-		return false;
-	}
-
-	const double CurrentTime = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0;
-	for (int32 Index = 0; Index < ResetProtectedPawns.Num(); ++Index)
-	{
-		if (ResetProtectedPawns[Index].Get() == Pawn && ResetProtectionEndTimes.IsValidIndex(Index) == true && ResetProtectionEndTimes[Index] > CurrentTime)
-		{
-			return true;
-		}
-	}
-
-	return false;
-}
-
-void ARETilePathManager::CleanupResetProtection()
-{
-	const double CurrentTime = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0;
-	for (int32 Index = ResetProtectedPawns.Num() - 1; Index >= 0; --Index)
-	{
-		const bool bInvalidPawn = ResetProtectedPawns[Index].IsValid() == false;
-		const bool bExpired = ResetProtectionEndTimes.IsValidIndex(Index) == false || ResetProtectionEndTimes[Index] <= CurrentTime;
-		if (bInvalidPawn == true || bExpired == true)
-		{
-			ResetProtectedPawns.RemoveAt(Index);
-			if (ResetProtectionEndTimes.IsValidIndex(Index) == true)
-			{
-				ResetProtectionEndTimes.RemoveAt(Index);
-			}
-		}
-	}
-}
 
 bool ARETilePathManager::IsPawnInsidePuzzleArea(APawn* Pawn) const
 {
@@ -1256,23 +1030,6 @@ ERETilePathDirection ARETilePathManager::CalculateDirection(FIntPoint From, FInt
 	return ERETilePathDirection::None;
 }
 
-FTransform ARETilePathManager::GetResetTransform() const
-{
-	if (IsValid(ResetPointActor) == true)
-	{
-		return ResetPointActor->GetActorTransform();
-	}
-
-	if (SafePath.IsValidIndex(0) == true)
-	{
-		if (ARETilePathTile* StartTile = FindTileByCoordinate(SafePath[0]))
-		{
-			return StartTile->GetActorTransform();
-		}
-	}
-
-	return GetActorTransform();
-}
 
 int32 ARETilePathManager::FindSafePathIndex(FIntPoint Coordinate) const
 {

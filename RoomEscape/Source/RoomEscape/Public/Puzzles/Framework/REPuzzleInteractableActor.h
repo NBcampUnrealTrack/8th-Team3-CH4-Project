@@ -8,6 +8,7 @@
 class UBoxComponent;
 class UUserWidget;
 class UWidgetComponent;
+class UTextRenderComponent;
 class APawn;
 
 UCLASS(Abstract, Blueprintable)
@@ -27,6 +28,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Puzzle|Interaction Prompt", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UWidgetComponent> InteractionPromptWidgetComponent;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Puzzle|Interaction Prompt", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UTextRenderComponent> InteractionPromptTextRender;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Puzzle|Interaction Prompt", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<UUserWidget> InteractionPromptWidgetClass;
 
@@ -38,6 +42,12 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Puzzle|Interaction Prompt", meta = (AllowPrivateAccess = "true"))
 	FVector2D InteractionPromptDrawSize = FVector2D(180.0, 60.0);
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Puzzle|Interaction Prompt", meta = (AllowPrivateAccess = "true"))
+	bool bUseNativePromptFallback = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Puzzle|Interaction Prompt", meta = (ClampMin = "1.0", AllowPrivateAccess = "true"))
+	float NativePromptWorldSize = 28.0f;
 
 public:
 	UFUNCTION(BlueprintPure, Category = "Puzzle|Interaction")

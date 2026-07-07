@@ -1,12 +1,15 @@
 #include "Puzzles/BombDefusal/REBombDefusalManager.h"
+#include "Engine/World.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/PlayerState.h"
+#include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 #include "Puzzles/BombDefusal/REBombButton.h"
 #include "Puzzles/BombDefusal/REBombDevice.h"
 #include "Puzzles/BombDefusal/REBombPatternData.h"
 #include "Puzzles/BombDefusal/REBombWire.h"
+#include "UI/REBombFeedbackWidget.h"
 
 AREBombDefusalManager::AREBombDefusalManager()
 {
@@ -70,6 +73,11 @@ float AREBombDefusalManager::GetTimeLimitSeconds() const
 	return IsValid(PatternData) == true ? FMath::Max(PatternData->TimeLimitSeconds, 0.0f) : 0.0f;
 }
 
+float AREBombDefusalManager::GetFailureRestrictionSeconds() const
+{
+	return FMath::Max(FailureRestrictionSeconds, 0.0f);
+}
+
 bool AREBombDefusalManager::IsBombRunning() const
 {
 	return IsActive() == true && RemainingTimeSeconds > 0.0f && IsValid(PatternData) == true;
@@ -119,7 +127,7 @@ void AREBombDefusalManager::RegisterButton(AREBombButton* InButton)
 	Buttons.AddUnique(InButton);
 	if (HasAuthority() == true)
 	{
-		InButton->ApplyServerPressedState(false, nullptr, 0.0f);
+		InButton->ApplyServerPressedState(false, nullptr);
 	}
 }
 
@@ -133,81 +141,34 @@ bool AREBombDefusalManager::SubmitWireCut(AREBombWire* Wire, AActor* Interactor)
 	FText FailureMessage;
 	if (ValidateCurrentWireStep(Wire, FailureMessage) == false)
 	{
-		FailBomb(Wire, FailureMessage);
+		FailBomb(Wire, Interactor, FailureMessage);
 		return false;
 	}
 
 	Wire->ApplyServerCutState(true);
-	AdvanceStep(Wire, FText::FromString(TEXT("선 절단 완료")));
+	AdvanceStep(Wire, Interactor, BuildSuccessFeedbackMessage());
 	return true;
 }
 
-bool AREBombDefusalManager::SubmitButtonPress(AREBombButton* Button, AActor* Interactor)
+bool AREBombDefusalManager::SubmitButtonToggle(AREBombButton* Button, AActor* Interactor)
 {
 	if (HasAuthority() == false || CanAcceptInput() == false || IsValid(Button) == false)
 	{
 		return false;
 	}
 
-	FText FailureMessage;
-	if (ValidateCurrentButtonStep(Button, FailureMessage) == false)
-	{
-		FailBomb(Button, FailureMessage);
-		return false;
-	}
-
-	if (Button->IsPressed() == true)
-	{
-		return false;
-	}
-
-	Button->ApplyServerPressedState(true, ResolvePlayerState(Interactor), GetWorld()->GetTimeSeconds());
-	MulticastBombInputResult(Button, true, FText::FromString(TEXT("버튼 홀드 시작")));
-	return true;
-}
-
-bool AREBombDefusalManager::SubmitButtonRelease(AREBombButton* Button, AActor* Interactor)
-{
-	if (HasAuthority() == false || CanAcceptInput() == false || IsValid(Button) == false)
-	{
-		return false;
-	}
+	const bool bNextPressed = Button->IsPressed() == false;
 
 	FText FailureMessage;
-	if (ValidateCurrentButtonStep(Button, FailureMessage) == false)
+	if (ValidateCurrentButtonStep(Button, bNextPressed, FailureMessage) == false)
 	{
-		FailBomb(Button, FailureMessage);
+		FailBomb(Button, Interactor, FailureMessage);
 		return false;
 	}
 
-	if (Button->IsPressed() == false)
-	{
-		return false;
-	}
+	Button->ApplyServerPressedState(bNextPressed, ResolvePlayerState(Interactor));
 
-	APlayerState* InteractorPlayerState = ResolvePlayerState(Interactor);
-	if (IsValid(Button->GetPressingPlayerState()) == true && IsValid(InteractorPlayerState) == true && Button->GetPressingPlayerState() != InteractorPlayerState)
-	{
-		return false;
-	}
-
-	FREBombStep CurrentStep;
-	if (GetCurrentStep(CurrentStep) == false)
-	{
-		return false;
-	}
-
-	const float HoldDuration = FMath::Max(GetWorld()->GetTimeSeconds() - Button->GetPressStartServerTimeSeconds(), 0.0f);
-	const bool bHoldAccepted = FMath::Abs(HoldDuration - CurrentStep.RequiredHoldSeconds) <= CurrentStep.HoldTolerance;
-	Button->ApplyServerPressedState(false, nullptr, 0.0f);
-
-	if (bHoldAccepted == false)
-	{
-		FailBomb(Button, FText::Format(FText::FromString(TEXT("홀드 시간 불일치: {0}초")), FText::AsNumber(HoldDuration)));
-		return false;
-	}
-
-	AdvanceStep(Button, FText::FromString(TEXT("버튼 홀드 완료")));
+	AdvanceStep(Button, Interactor, BuildSuccessFeedbackMessage());
 	return true;
 }
 
@@ -243,7 +204,7 @@ void AREBombDefusalManager::HandlePuzzleFailed()
 	if (bAutoResetOnFailure == true)
 	{
 		GetWorldTimerManager().ClearTimer(FailureResetTimerHandle);
-		GetWorldTimerManager().SetTimer(FailureResetTimerHandle, this, &AREBombDefusalManager::ResetAfterFailure, ResetDelaySeconds, false);
+		GetWorldTimerManager().SetTimer(FailureResetTimerHandle, this, &AREBombDefusalManager::ResetAfterFailure, GetFailureRestrictionSeconds(), false);
 	}
 }
 
@@ -257,10 +218,11 @@ void AREBombDefusalManager::OnRep_RemainingTimeSeconds()
 	OnBombTimeChanged.Broadcast(RemainingTimeSeconds, GetTimeLimitSeconds());
 }
 
-void AREBombDefusalManager::MulticastBombInputResult_Implementation(AActor* SourceActor, bool bCorrect, const FText& ResultMessage)
+void AREBombDefusalManager::MulticastBombInputResult_Implementation(AActor* SourceActor, APlayerState* TargetPlayerState, bool bCorrect, const FText& ResultMessage)
 {
 	OnBombInputResult.Broadcast(SourceActor, bCorrect, ResultMessage);
 	ReceiveBombInputResult(SourceActor, bCorrect, ResultMessage);
+	ShowFeedbackWidgetLocal(SourceActor, TargetPlayerState, bCorrect, ResultMessage);
 }
 
 void AREBombDefusalManager::MulticastBombRuntimeReset_Implementation()
@@ -323,7 +285,7 @@ void AREBombDefusalManager::ApplyPatternToRegisteredActors()
 	{
 		if (IsValid(Button) == true)
 		{
-			Button->ApplyServerPressedState(false, nullptr, 0.0f);
+			Button->ApplyServerPressedState(false, nullptr);
 		}
 	}
 }
@@ -352,7 +314,7 @@ void AREBombDefusalManager::TickTimer()
 	SetRemainingTimeSeconds(NewRemainingTime);
 	if (NewRemainingTime <= 0.0f)
 	{
-		FailBomb(this, FText::FromString(TEXT("시간 초과")));
+		FailBomb(this, nullptr, BuildFailureFeedbackMessage());
 	}
 }
 
@@ -388,34 +350,39 @@ void AREBombDefusalManager::SetRemainingTimeSeconds(float NewRemainingTimeSecond
 	}
 }
 
-void AREBombDefusalManager::AdvanceStep(AActor* SourceActor, const FText& ResultMessage)
+void AREBombDefusalManager::AdvanceStep(AActor* SourceActor, AActor* Interactor, const FText& ResultMessage)
 {
-	MulticastBombInputResult(SourceActor, true, ResultMessage);
+	APlayerState* TargetPlayerState = ResolvePlayerState(Interactor);
+	MulticastBombInputResult(SourceActor, TargetPlayerState, true, ResultMessage);
 	const int32 NextStepIndex = CurrentStepIndex + 1;
 	if (NextStepIndex >= GetTotalStepCount())
 	{
-		CompleteBomb(SourceActor);
+		CompleteBomb(SourceActor, Interactor);
 		return;
 	}
 
 	SetCurrentStepIndex(NextStepIndex);
 }
 
-void AREBombDefusalManager::CompleteBomb(AActor* SourceActor)
+void AREBombDefusalManager::CompleteBomb(AActor* SourceActor, AActor* Interactor)
 {
 	SetCurrentStepIndex(GetTotalStepCount());
 	MarkSolved();
-	MulticastBombInputResult(SourceActor, true, FText::FromString(TEXT("폭탄 해제 완료")));
+	MulticastBombInputResult(SourceActor, ResolvePlayerState(Interactor), true, BuildSolvedFeedbackMessage());
 }
 
-void AREBombDefusalManager::FailBomb(AActor* SourceActor, const FText& ResultMessage)
+void AREBombDefusalManager::FailBomb(AActor* SourceActor, AActor* Interactor, const FText& ResultMessage)
 {
+	(void)ResultMessage;
+
 	if (HasAuthority() == false || IsSolved() == true || IsFailed() == true)
 	{
 		return;
 	}
 
-	MulticastBombInputResult(SourceActor, false, ResultMessage);
+	SetRemainingTimeSeconds(0.0f);
+	const FText FailureFeedbackMessage = BuildFailureFeedbackMessage();
+	MulticastBombInputResult(SourceActor, ResolvePlayerState(Interactor), false, FailureFeedbackMessage);
 	MarkFailed();
 }
 
@@ -432,6 +399,73 @@ void AREBombDefusalManager::ResetAfterFailure()
 	MulticastBombRuntimeReset();
 }
 
+void AREBombDefusalManager::ShowFeedbackWidgetLocal(AActor* SourceActor, APlayerState* TargetPlayerState, bool bCorrect, const FText& ResultMessage)
+{
+	APlayerController* LocalPlayerController = ResolveLocalPlayerController(TargetPlayerState);
+	if (IsValid(LocalPlayerController) == false || IsValid(FeedbackWidgetClass) == false)
+	{
+		return;
+	}
+
+	if (IsValid(ActiveFeedbackWidget) == false || ActiveFeedbackWidget->GetClass() != FeedbackWidgetClass)
+	{
+		ActiveFeedbackWidget = CreateWidget<UREBombFeedbackWidget>(LocalPlayerController, FeedbackWidgetClass);
+	}
+
+	if (IsValid(ActiveFeedbackWidget) == false)
+	{
+		return;
+	}
+
+	if (ActiveFeedbackWidget->IsInViewport() == false)
+	{
+		ActiveFeedbackWidget->AddToViewport(80);
+	}
+
+	ActiveFeedbackWidget->InitializeFeedback(SourceActor, bCorrect, ResultMessage, FeedbackWidgetDisplaySeconds);
+}
+
+APlayerController* AREBombDefusalManager::ResolveLocalPlayerController(APlayerState* TargetPlayerState) const
+{
+	UWorld* World = GetWorld();
+	if (IsValid(World) == false)
+	{
+		return nullptr;
+	}
+
+	for (FConstPlayerControllerIterator Iterator = World->GetPlayerControllerIterator(); Iterator; ++Iterator)
+	{
+		APlayerController* PlayerController = Iterator->Get();
+		if (IsValid(PlayerController) == false || PlayerController->IsLocalController() == false)
+		{
+			continue;
+		}
+
+		if (IsValid(TargetPlayerState) == false || PlayerController->PlayerState == TargetPlayerState)
+		{
+			return PlayerController;
+		}
+	}
+
+	return nullptr;
+}
+
+FText AREBombDefusalManager::BuildSuccessFeedbackMessage() const
+{
+	return FText::FromString(TEXT("장치 조작이 입력되었습니다."));
+}
+
+FText AREBombDefusalManager::BuildSolvedFeedbackMessage() const
+{
+	return FText::FromString(TEXT("폭탄 해제가 완료되었습니다."));
+}
+
+FText AREBombDefusalManager::BuildFailureFeedbackMessage() const
+{
+	const int32 RestrictionSeconds = FMath::Max(0, FMath::RoundToInt(GetFailureRestrictionSeconds()));
+	return FText::Format(FText::FromString(TEXT("폭탄이 폭발했습니다.\n{0}초 후 다시 시도할 수 있습니다.")), FText::AsNumber(RestrictionSeconds));
+}
+
 bool AREBombDefusalManager::CanAcceptInput() const
 {
 	return IsActive() == true && IsValid(PatternData) == true && PatternData->IsPatternValid() == true && CurrentStepIndex < GetTotalStepCount();
@@ -442,31 +476,37 @@ bool AREBombDefusalManager::ValidateCurrentWireStep(const AREBombWire* Wire, FTe
 	FREBombStep CurrentStep;
 	if (GetCurrentStep(CurrentStep) == false || CurrentStep.StepType != EREBombStepType::CutWire)
 	{
-		OutFailureMessage = FText::FromString(TEXT("현재 단계는 선 절단 단계가 아닙니다"));
+		OutFailureMessage = BuildFailureFeedbackMessage();
 		return false;
 	}
 
 	if (IsValid(Wire) == false || Wire->IsCut() == true || Wire->GetWireIndex() != CurrentStep.WireIndex)
 	{
-		OutFailureMessage = FText::FromString(TEXT("잘못된 선을 절단했습니다"));
+		OutFailureMessage = BuildFailureFeedbackMessage();
 		return false;
 	}
 
 	return true;
 }
 
-bool AREBombDefusalManager::ValidateCurrentButtonStep(const AREBombButton* Button, FText& OutFailureMessage) const
+bool AREBombDefusalManager::ValidateCurrentButtonStep(const AREBombButton* Button, bool bNextPressed, FText& OutFailureMessage) const
 {
 	FREBombStep CurrentStep;
-	if (GetCurrentStep(CurrentStep) == false || CurrentStep.StepType != EREBombStepType::HoldButton)
+	if (GetCurrentStep(CurrentStep) == false || CurrentStep.StepType != EREBombStepType::ButtonState)
 	{
-		OutFailureMessage = FText::FromString(TEXT("현재 단계는 버튼 홀드 단계가 아닙니다"));
+		OutFailureMessage = BuildFailureFeedbackMessage();
 		return false;
 	}
 
 	if (IsValid(Button) == false || Button->GetButtonId() != CurrentStep.ButtonId)
 	{
-		OutFailureMessage = FText::FromString(TEXT("잘못된 버튼을 조작했습니다"));
+		OutFailureMessage = BuildFailureFeedbackMessage();
+		return false;
+	}
+
+	if (bNextPressed != CurrentStep.bRequiredButtonPressed)
+	{
+		OutFailureMessage = BuildFailureFeedbackMessage();
 		return false;
 	}
 

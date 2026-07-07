@@ -32,9 +32,6 @@ protected:
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Bomb Button", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<APlayerState> PressingPlayerState;
 
-	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Bomb Button", meta = (AllowPrivateAccess = "true"))
-	float PressStartServerTimeSeconds = 0.0f;
-
 public:
 	UFUNCTION(BlueprintCallable, Category = "Bomb Button")
 	void SetBombManager(AREBombDefusalManager* InManager);
@@ -49,12 +46,9 @@ public:
 	bool IsPressed() const;
 
 	UFUNCTION(BlueprintPure, Category = "Bomb Button")
-	float GetPressStartServerTimeSeconds() const;
-
-	UFUNCTION(BlueprintPure, Category = "Bomb Button")
 	APlayerState* GetPressingPlayerState() const;
 
-	void ApplyServerPressedState(bool bNewPressed, APlayerState* InPressingPlayerState, float InPressStartServerTimeSeconds);
+	void ApplyServerPressedState(bool bNewPressed, APlayerState* InPressingPlayerState);
 
 protected:
 	virtual bool CanUseElement(AActor* Interactor) const override;

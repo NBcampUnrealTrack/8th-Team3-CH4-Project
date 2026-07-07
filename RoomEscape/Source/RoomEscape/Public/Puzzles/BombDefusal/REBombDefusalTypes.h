@@ -18,7 +18,7 @@ UENUM(BlueprintType)
 enum class EREBombStepType : uint8
 {
 	CutWire,
-	HoldButton
+	ButtonState UMETA(DisplayName = "Button State")
 };
 
 USTRUCT(BlueprintType)
@@ -47,14 +47,11 @@ struct ROOMESCAPE_API FREBombStep
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Bomb", meta = (EditCondition = "StepType == EREBombStepType::CutWire", EditConditionHides))
 	int32 WireIndex = 0;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Bomb", meta = (EditCondition = "StepType == EREBombStepType::HoldButton", EditConditionHides))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Bomb", meta = (EditCondition = "StepType == EREBombStepType::ButtonState", EditConditionHides))
 	FName ButtonId = TEXT("Main");
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Bomb", meta = (ClampMin = "0.0", EditCondition = "StepType == EREBombStepType::HoldButton", EditConditionHides))
-	float RequiredHoldSeconds = 3.0f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Bomb", meta = (ClampMin = "0.0", EditCondition = "StepType == EREBombStepType::HoldButton", EditConditionHides))
-	float HoldTolerance = 0.25f;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Bomb", meta = (EditCondition = "StepType == EREBombStepType::ButtonState", EditConditionHides))
+	bool bRequiredButtonPressed = true;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Bomb")
 	FText StepDescription;

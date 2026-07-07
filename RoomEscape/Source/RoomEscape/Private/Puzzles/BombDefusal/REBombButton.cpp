@@ -15,7 +15,10 @@ AREBombButton::AREBombButton()
 	ButtonMesh->SetupAttachment(SceneRoot);
 	ButtonMesh->SetCollisionProfileName(TEXT("BlockAll"));
 
-	InteractionCollision->SetBoxExtent(FVector(50.0, 50.0, 50.0));
+	InteractionCollision->SetBoxExtent(FVector(90.0, 90.0, 90.0));
+	InteractionPromptText = FText::FromString(TEXT("버튼 조작"));
+	InteractionPromptRelativeLocation = FVector(0.0, 0.0, 100.0);
+
 }
 
 void AREBombButton::BeginPlay()
@@ -34,7 +37,6 @@ void AREBombButton::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 
 	DOREPLIFETIME(ThisClass, bPressed);
 	DOREPLIFETIME(ThisClass, PressingPlayerState);
-	DOREPLIFETIME(ThisClass, PressStartServerTimeSeconds);
 }
 
 void AREBombButton::SetBombManager(AREBombDefusalManager* InManager)
@@ -57,17 +59,12 @@ bool AREBombButton::IsPressed() const
 	return bPressed;
 }
 
-float AREBombButton::GetPressStartServerTimeSeconds() const
-{
-	return PressStartServerTimeSeconds;
-}
-
 APlayerState* AREBombButton::GetPressingPlayerState() const
 {
 	return PressingPlayerState;
 }
 
-void AREBombButton::ApplyServerPressedState(bool bNewPressed, APlayerState* InPressingPlayerState, float InPressStartServerTimeSeconds)
+void AREBombButton::ApplyServerPressedState(bool bNewPressed, APlayerState* InPressingPlayerState)
 {
 	if (HasAuthority() == false)
 	{
@@ -76,7 +73,6 @@ void AREBombButton::ApplyServerPressedState(bool bNewPressed, APlayerState* InPr
 
 	bPressed = bNewPressed;
 	PressingPlayerState = bNewPressed == true ? InPressingPlayerState : nullptr;
-	PressStartServerTimeSeconds = bNewPressed == true ? InPressStartServerTimeSeconds : 0.0f;
 	OnRep_ButtonPressed();
 }
 
@@ -93,14 +89,7 @@ void AREBombButton::HandleInteract(AActor* Interactor)
 		return;
 	}
 
-	if (bPressed == false)
-	{
-		BombManager->SubmitButtonPress(this, Interactor);
-	}
-	else
-	{
-		BombManager->SubmitButtonRelease(this, Interactor);
-	}
+	BombManager->SubmitButtonToggle(this, Interactor);
 }
 
 void AREBombButton::OnRep_ButtonPressed()
