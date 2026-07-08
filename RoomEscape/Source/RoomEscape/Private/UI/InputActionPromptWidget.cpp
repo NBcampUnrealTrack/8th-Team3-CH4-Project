@@ -59,5 +59,5 @@ void UInputActionPromptWidget::OnCompleteAsyncLoadInputActionIcon(TSoftObjectPtr
 
 	// 이미지에 사용되는 Texture 및 크기 설정
 	Image_InputAction->SetBrushFromTexture(InputActionIcon);
-	Image_InputAction->SetDesiredSizeOverride({ 32, 32 });
+	Image_InputAction->SetDesiredSizeOverride(FVector2D(32.0f, 32.0f));
 }

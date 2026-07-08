@@ -12,6 +12,7 @@
 				"Engine",
 				"UMG",
 				"CommonUI"
+				"GameplayAbilities"
 			]
 		},
 		{
@@ -30,6 +31,10 @@
 		},
 		{
 			"Name": "CommonUI",
+			"Enabled": true
+		},
+		{
+			"Name": "GameplayAbilities",
 			"Enabled": true
 		}
 	]

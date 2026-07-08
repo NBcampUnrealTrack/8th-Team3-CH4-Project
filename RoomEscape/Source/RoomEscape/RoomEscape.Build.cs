@@ -21,13 +21,14 @@ public class RoomEscape : ModuleRules
 			"EnhancedInput", 
 			"OnlineSubsystem",
 			"OnlineSubsystemUtils",
-			"GameplayTags",
 			// for UI
 			"UMG",
 			"CommonUI",
 			"CommonInput",
 			// Add Custom Implement Modules
-			"WidgetUtility"
+			"WidgetUtility",
+			// GameplayAbilities
+			"GameplayAbilities", "GameplayTasks", "GameplayTags",
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] {

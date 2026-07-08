@@ -1,0 +1,57 @@
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "AbilitySystem/NativeGameplayTags.h"
+
+namespace RETag
+{
+	namespace Input
+	{
+		UE_DEFINE_GAMEPLAY_TAG(Interact, "Input.Interact");
+	}
+	
+	namespace Ability
+	{
+		UE_DEFINE_GAMEPLAY_TAG(Interact, "Ability.Interact");
+	}
+	
+	namespace Event
+	{
+		namespace Interact
+		{
+			UE_DEFINE_GAMEPLAY_TAG(Succeeded, "Event.Interact.Succeeded");
+		}
+
+		namespace Timer
+		{
+			UE_DEFINE_GAMEPLAY_TAG(AlmostOver, "Event.Timer.AlmostOver");
+		}
+
+		namespace Puzzle
+		{
+			UE_DEFINE_GAMEPLAY_TAG(Solved, "Event.Puzzle.Solved");
+			UE_DEFINE_GAMEPLAY_TAG(Failed, "Event.Puzzle.Failed");
+			UE_DEFINE_GAMEPLAY_TAG(TrapTriggered, "Event.Puzzle.TrapTriggered");
+		}
+
+		namespace Debug
+		{
+			UE_DEFINE_GAMEPLAY_TAG(Test, "Event.Debug.Test");
+		}
+	}
+
+	namespace State
+	{
+		UE_DEFINE_GAMEPLAY_TAG(Interacting, "State.Interacting");
+		
+		namespace Flashlight
+		{
+			UE_DEFINE_GAMEPLAY_TAG(On, "State.Flashlight.On");
+		}
+		
+		namespace Holding
+		{
+			UE_DEFINE_GAMEPLAY_TAG(Radio, "State.Holding.Radio");
+		}
+	}
+}

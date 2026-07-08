@@ -24,6 +24,9 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Item")
 	FORCEINLINE UDataTable* GetItemDataTable() const { return ItemDataTable; }
+
+	UFUNCTION(BlueprintCallable, Category = "Item")
+	void SetItemDataTable(UDataTable* NewItemDataTable);
 	
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item", meta = (AllowPrivateAccess = "true", RequiredAssetDataTags = "RowStructure=/Script/RoomEscape.REItemDataRow"))
