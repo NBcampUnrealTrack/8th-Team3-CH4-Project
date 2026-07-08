@@ -6,6 +6,8 @@
 #include "Interfaces/OnlineSessionInterface.h"
 #include "REGameInstance.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnJoinProcessResult, bool, bSuccess, const FString&, Message);
+
 UCLASS()
 class ROOMESCAPE_API UREGameInstance : public UGameInstance
 {
@@ -17,11 +19,14 @@ public:
 	virtual void Init() override;
 	
 	UFUNCTION(BlueprintCallable, Category = "Network")
-	void HostGame();
+	void HostGame(FString RoomName, FString Password);
 	
 	UFUNCTION(BlueprintCallable, Category = "Network")
-	void JoinGame();
-
+	void JoinGame(FString InputRoomName, FString InputPassword);
+	
+	UPROPERTY(BlueprintAssignable, Category = "Network")
+	FOnJoinProcessResult OnJoinProcessResult;
+	
 	UFUNCTION(BlueprintPure, Category = "Item")
 	FORCEINLINE UDataTable* GetItemDataTable() const { return ItemDataTable; }
 
@@ -34,6 +39,9 @@ protected:
 
 	TWeakPtr<IOnlineSession> SessionInterface;
 	TSharedPtr<class FOnlineSessionSearch> SessionSearch;
+	
+	FString TargetRoomName;
+	FString TargetPassword;
 	
 	// Delegate Callback Function
 	void OnCreateSessionComplete(FName SessionName, bool bWasSuccessful);
