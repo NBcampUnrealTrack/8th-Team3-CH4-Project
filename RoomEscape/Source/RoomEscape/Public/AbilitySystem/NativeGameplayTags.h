@@ -47,6 +47,7 @@ namespace RETag
 		namespace Debug
 		{
 			UE_DECLARE_GAMEPLAY_TAG_EXTERN(Test);
+			UE_DECLARE_GAMEPLAY_TAG_EXTERN(Piano);
 		}
 	}
 

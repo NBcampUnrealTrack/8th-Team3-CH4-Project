@@ -19,6 +19,8 @@ class ROOMESCAPE_API AREPianoSequenceManager : public AREPuzzleManager
 
 public:
 	AREPianoSequenceManager();
+	
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Piano")
 	TObjectPtr<UREPianoPatternData> PatternData;
@@ -55,10 +57,10 @@ private:
 	int32 PlaybackNoteCursor = 0;
 	FTimerHandle PlaybackTimerHandle;
 
-	UPROPERTY()
+	UPROPERTY(Replicated)
 	TObjectPtr<AREPianoInstrument> Instrument;
 
-	UPROPERTY()
+	UPROPERTY(Replicated)
 	TObjectPtr<AREPianoBoard> Board;
 
 	void GenerateNewMelody();
