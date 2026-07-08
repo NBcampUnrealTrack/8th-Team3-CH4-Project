@@ -23,6 +23,8 @@ public class RoomEscape : ModuleRules
 			"OnlineSubsystemUtils",
 			// for UI
 			"UMG",
+			"CommonUI",
+			"CommonInput",
 			// Add Custom Implement Modules
 			"WidgetUtility",
 			// GameplayAbilities
