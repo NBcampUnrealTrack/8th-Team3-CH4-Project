@@ -15,6 +15,7 @@ UREInventoryComponent::UREInventoryComponent()
 
 	// ...
 
+	InventoryCapacity = FIntPoint(1, 1);
 }
 
 
@@ -68,10 +69,15 @@ void UREInventoryComponent::TickComponent(float DeltaTime, ELevelTick TickType, 
 	// ...
 }
 
-bool UREInventoryComponent::AddItemToInventory(FPrimaryAssetId ItemDataAssetID)
+bool UREInventoryComponent::AddItemToInventory(const FPrimaryAssetId& ItemDataAssetID)
 {
+	if (ItemDataAssetID.IsValid() == false)
+	{
+		return false;
+	}
+
 	// 인벤토리가 가득 차있는지 확인
-	int32 InventoryLength = InventorySize.X * InventorySize.Y;
+	int32 InventoryLength = InventoryCapacity.X * InventoryCapacity.Y;
 	if (Container.Num() >= InventoryLength)
 	{
 		return false;
@@ -94,8 +100,13 @@ bool UREInventoryComponent::AddItemToInventory(FPrimaryAssetId ItemDataAssetID)
 	return false;
 }
 
-bool UREInventoryComponent::SwapItemIndex(int32 OldIndex, int32 NewIndex)
+bool UREInventoryComponent::SwapItemIndex(const int32& OldIndex, const int32& NewIndex)
 {
+	if (OldIndex < 0 || NewIndex < 0)
+	{
+		return false;
+	}
+
 	// 이전 인덱스에 위치한 DataAsset 복사 및 키(인덱스) 제거
 	FPrimaryAssetId OldIndexDataAssetID;
 	if (Container.RemoveAndCopyValue(OldIndex, OldIndexDataAssetID) == false)
@@ -124,8 +135,13 @@ bool UREInventoryComponent::SwapItemIndex(int32 OldIndex, int32 NewIndex)
 	return true;
 }
 
-FPrimaryAssetId UREInventoryComponent::RemoveItemFromInventory(int32 DataIndex)
+FPrimaryAssetId UREInventoryComponent::RemoveItemFromInventory(const int32& DataIndex)
 {
+	if (DataIndex < 0)
+	{
+		return FPrimaryAssetId();
+	}
+
 	// DataAsset 복사 및 키(인덱스) 제거
 	FPrimaryAssetId DataAssetID;
 	if (Container.RemoveAndCopyValue(DataIndex, DataAssetID) == true)

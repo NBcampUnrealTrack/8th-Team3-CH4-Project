@@ -41,7 +41,7 @@ protected:
     // 인벤토리 크기
     // { RowCount, ColumnCount }
     UPROPERTY(EditAnywhere)
-    FIntPoint InventorySize;
+    FIntPoint InventoryCapacity;
 
     UPROPERTY(EditAnywhere)
     // 보관된 아이템이 위치한 인덱스를 보관하는 Map
@@ -49,16 +49,16 @@ protected:
 
 public:
     UFUNCTION(BlueprintCallable, Category = "Inventory")
-    bool AddItemToInventory(FPrimaryAssetId ItemDataAssetID);
+    bool AddItemToInventory(const FPrimaryAssetId& ItemDataAssetID);
 
     UFUNCTION(BlueprintCallable, Category = "Inventory")
-    bool SwapItemIndex(int32 OldIndex, int32 NewIndex);
+    bool SwapItemIndex(const int32& OldIndex, const int32& NewIndex);
 
     UFUNCTION(BlueprintCallable, Category = "Inventory")
-    FPrimaryAssetId RemoveItemFromInventory(int32 DataIndex);
+    FPrimaryAssetId RemoveItemFromInventory(const int32& DataIndex);
 
     UFUNCTION(BlueprintCallable, Category = "Inventory")
-    FORCEINLINE FIntPoint GetInventoryCapacity() const { return InventorySize; }
+    FORCEINLINE FIntPoint GetInventoryCapacity() const { return InventoryCapacity; }
 
     FORCEINLINE const TMap<int32, FPrimaryAssetId>& GetInventoryContainer() const { return Container; }
 };

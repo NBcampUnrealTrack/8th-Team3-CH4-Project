@@ -30,6 +30,6 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item", meta = (AssetBundles = "UI"))
 	TObjectPtr<UTexture2D> Texture_Icon;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item", meta = (AssetBundles = "World"))
 	TSubclassOf<AActor> ItemClass;
 };

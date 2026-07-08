@@ -44,8 +44,6 @@ protected:
     TSubclassOf<UUserWidget> InventoryEntryWidgetClass;
 
 protected:
-    void SetFocusedWidget(UCommonUserWidget* NewFocusedWidget);
-
     UFUNCTION()
     void OnInventoryChanged(const int32& Index, const FPrimaryAssetId& NewDataAssetID);
 };

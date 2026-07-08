@@ -85,6 +85,8 @@ void UInventoryWidget::InitializeWidgetByComponent_Implementation(UActorComponen
 
             // 해당 인덱스에 할당된 아이템이 존재하면 Entry Widget에 Item 데이터 설정
             InventoryEntryWidget->SetEntryDataAsset(InventoryContainer.Contains(i) == true ? InventoryContainer[i] : FPrimaryAssetId());
+            InventoryEntryWidget->SetEntryIndex(i);
+            InventoryEntryWidget->OnEntryClicked.BindUObject(InventoryComponent, &UREInventoryComponent::RemoveItemFromInventory);
         }
     }
 
@@ -102,7 +104,7 @@ void UInventoryWidget::InitializeWidgetByComponent_Implementation(UActorComponen
             // UniformGrid의 자식으로 존재하는 Entry(Slot) 인스턴스 얻기
             if (i < CurrentInventoryChildrenCount)
             {
-                UWidget* ChildWidget =UniformGrid_Inventory->GetChildAt(i);
+                UWidget* ChildWidget = UniformGrid_Inventory->GetChildAt(i);
                 InventoryEntryWidget = Cast<UREInventoryEntryWidget>(ChildWidget);
             }
 
@@ -128,6 +130,8 @@ void UInventoryWidget::InitializeWidgetByComponent_Implementation(UActorComponen
 
             // 해당 인덱스에 할당된 아이템이 존재하면 Entry Widget에 Item 데이터 설정
             InventoryEntryWidget->SetEntryDataAsset(InventoryContainer.Contains(i) == true ? InventoryContainer[i] : FPrimaryAssetId());
+            InventoryEntryWidget->SetEntryIndex(i);
+            InventoryEntryWidget->OnEntryClicked.BindUObject(InventoryComponent, &UREInventoryComponent::RemoveItemFromInventory);
         }
     }
 
@@ -137,14 +141,6 @@ void UInventoryWidget::InitializeWidgetByComponent_Implementation(UActorComponen
 
 void UInventoryWidget::InitializeWidgetByActor_Implementation(AActor* Actor)
 {
-}
-
-void UInventoryWidget::SetFocusedWidget(UCommonUserWidget* NewFocusedWidget)
-{
-    if (FocusedWidget == NewFocusedWidget)
-    {
-        return;
-    }
 }
 
 void UInventoryWidget::OnInventoryChanged(const int32& Index, const FPrimaryAssetId& NewDataAssetID)
