@@ -49,6 +49,15 @@ namespace RETag
 			UE_DECLARE_GAMEPLAY_TAG_EXTERN(Test);
 			UE_DECLARE_GAMEPLAY_TAG_EXTERN(Piano);
 		}
+
+		// 게임 진행(REProgressionManager) 이벤트
+		namespace Progress
+		{
+			UE_DECLARE_GAMEPLAY_TAG_EXTERN(StageChanged);
+			UE_DECLARE_GAMEPLAY_TAG_EXTERN(BadEnding);
+			UE_DECLARE_GAMEPLAY_TAG_EXTERN(Restarted);
+			UE_DECLARE_GAMEPLAY_TAG_EXTERN(Cleared);
+		}
 	}
 
 	// --- 상태 (수치 대신 상태를 태그로)
