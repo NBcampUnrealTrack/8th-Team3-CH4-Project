@@ -2,6 +2,24 @@
 
 
 #include "UI/LocalWidgetManager.h"
+#include "Blueprint/GameViewportSubsystem.h"
+#include "Engine/AssetManager.h"
+#include "Settings/LocalWidgetManagerSettings.h"
+#include "Data/WidgetManagerConfigDataAsset.h"
+
+void ULocalWidgetManager::Initialize(FSubsystemCollectionBase& Collection)
+{
+	Super::Initialize(Collection);
+
+	LoadConfigDataAsset();
+}
+
+void ULocalWidgetManager::Deinitialize()
+{
+	ClearWidgetInGame();
+
+	Super::Deinitialize();
+}
 
 ULocalWidgetManager* ULocalWidgetManager::GetInstance(const UObject* WorldContextObject)
 {
@@ -74,14 +92,14 @@ UUserWidget* ULocalWidgetManager::AddWidget(FName WidgetName, TSubclassOf<UUserW
 	WidgetMap.Remove(WidgetName);
 
 	// 로컬 플레이어 객체 얻기
-	ULocalPlayer* LocalPlayer = GetLocalPlayer();
-	if (IsValid(LocalPlayer) == false)
+	APlayerController* LocalPlayerController = GEngine->GetFirstLocalPlayerController(GetWorld());
+	if (IsValid(LocalPlayerController) == false)
 	{
 		return nullptr;
 	}
 
 	// Instance 생성
-	UUserWidget* UserWidgetInstance = CreateWidget<UUserWidget>(LocalPlayer->PlayerController, WidgetClass);
+	UUserWidget* UserWidgetInstance = CreateWidget<UUserWidget>(LocalPlayerController, WidgetClass);
 
 	// Instance 저장
 	WidgetMap.Add(WidgetName, UserWidgetInstance);
@@ -164,12 +182,17 @@ bool ULocalWidgetManager::RemoveWidget(FName WidgetName)
 	}
 
 	// 동일한 Key로 등록된 Widget Instance 얻기
-	UWidget* WidgetInstance = WidgetMap.FindAndRemoveChecked(WidgetName);
+	TObjectPtr<UWidget> WidgetInstance = nullptr;
+	WidgetMap.RemoveAndCopyValue(WidgetName, WidgetInstance);
 	if (IsValid(WidgetInstance) == true)
 	{
 		// Instance 삭제
 		WidgetInstance->RemoveFromParent();
 	}
+
+	// 해당 Widget 이름으로 등록된 비동기 작업 삭제
+	PendingTasks.Remove(WidgetName);
+
 	return true;
 }
 
@@ -200,7 +223,62 @@ void ULocalWidgetManager::ClearWidgetInGame()
 		pair.Value->RemoveFromParent();
 	}
 	
+	// Widget에 따라 예정된 작업 제거
+	PendingTasks.Empty();
+	
 	// 저장된 Widget 목록 초기화
 	WidgetMap.Empty();
+	return;
+}
+
+UUserWidget* ULocalWidgetManager::GetRootWidget()
+{
+	// Root Widget이 존재하지 않는 경우를 대비하여 등록 절차 진행
+	// 이전에 Widget이 존재하면 기존의 Instance를 반환받음
+	UUserWidget* RootWidget = AddWidget(RootWidgetName, RootWidgetClass);
+
+	// RootWidget의 Instance가 유효하면 PlayerScreen(Viewport)에 추가
+	if (IsValid(RootWidget) == true)
+	{
+		if (RootWidget->IsInViewport() == false)
+		{
+			// Viewport 관리자 얻기
+			UGameViewportSubsystem* GameViewportSubSystem = UGameViewportSubsystem::Get(GetWorld());
+			if (IsValid(GameViewportSubSystem) == true)
+			{
+				FGameViewportWidgetSlot ViewportWidgetSlot;
+				ViewportWidgetSlot.bAutoRemoveOnWorldRemoved = false;
+				GameViewportSubSystem->AddWidgetForPlayer(RootWidget, GetLocalPlayer(), ViewportWidgetSlot);
+			}
+		}
+		return RootWidget;
+	}
+	return nullptr;
+}
+
+void ULocalWidgetManager::LoadConfigDataAsset()
+{
+	const ULocalWidgetManagerSettings* Settings = GetDefault<ULocalWidgetManagerSettings>();
+
+	if (IsValid(Settings) == false)
+	{
+		UE_LOG(LogTemp, Error, TEXT("LocalWidgetManagerSettings is null."));
+		return;
+	}
+	if (Settings->WidgetManagerConfig.IsNull() == true)
+	{
+		UE_LOG(LogTemp, Error, TEXT("WidgetManagerConfig DataAsset is not assigned."));
+		return;
+	}
+
+	UWidgetManagerConfigDataAsset* ConfigDataAsset = Settings->WidgetManagerConfig.LoadSynchronous();
+	if (IsValid(ConfigDataAsset) == false)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to load WidgetManagerConfigDataAsset."));
+		return;
+	}
+
+	RootWidgetName = ConfigDataAsset->RootWidgetName;
+	RootWidgetClass = ConfigDataAsset->RootWidgetClass.LoadSynchronous();
 	return;
 }

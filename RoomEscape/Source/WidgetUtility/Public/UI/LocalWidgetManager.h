@@ -18,10 +18,23 @@ UCLASS()
 class WIDGETUTILITY_API ULocalWidgetManager : public ULocalPlayerSubsystem
 {
 	GENERATED_BODY()
+
+public:
+	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+
+	virtual void Deinitialize() override;
 	
 protected:
+	// Root UI의 이름
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	FName RootWidgetName;
+
+	// Root UI 클래스
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TSubclassOf<UUserWidget> RootWidgetClass;
+
 	// 등록된 Widget Instance들을 이름에 따라 저장하는 컨테이터
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TMap<FName, TObjectPtr<UWidget>> WidgetMap;
 
 	// 동일한 이름으로 Widget Instance가 등록되었을 때 실행되는 함수들을 저장하는 컨테이너
@@ -96,4 +109,10 @@ public:
 	// WidgetManager에 등록된 모든 Widget Instance를 제거하는 함수
 	UFUNCTION(BlueprintCallable)
 	void ClearWidgetInGame();
+
+	UFUNCTION(BlueprintCallable)
+	UUserWidget* GetRootWidget();
+
+protected:
+	void LoadConfigDataAsset();
 };
