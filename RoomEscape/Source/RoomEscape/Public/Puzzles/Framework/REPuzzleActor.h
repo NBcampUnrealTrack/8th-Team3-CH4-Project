@@ -20,12 +20,20 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Puzzle", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USceneComponent> SceneRoot;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Replicated, Category = "Puzzle", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, ReplicatedUsing = OnRep_PuzzleManager, Category = "Puzzle", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<AREPuzzleManager> PuzzleManager;
 
 public:
 	UFUNCTION(BlueprintCallable, Category = "Puzzle")
 	void SetPuzzleManager(AREPuzzleManager* InPuzzleManager);
+
+protected:
+	UFUNCTION()
+	virtual void OnRep_PuzzleManager();
+
+	virtual void HandlePuzzleManagerChanged();
+
+public:
 
 	UFUNCTION(BlueprintPure, Category = "Puzzle")
 	AREPuzzleManager* GetPuzzleManager() const;

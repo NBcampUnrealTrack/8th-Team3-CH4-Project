@@ -1,4 +1,5 @@
 #include "Puzzles/Framework/REPuzzleInteractableActor.h"
+
 #include "Blueprint/UserWidget.h"
 #include "Components/BoxComponent.h"
 #include "Components/TextBlock.h"
@@ -62,12 +63,20 @@ void AREPuzzleInteractableActor::BeginPlay()
 
 	SetInteractionPromptVisible(false);
 	RefreshInteractionPromptText();
+	BindPuzzleManagerStateChanged();
 
 	if (IsValid(InteractionCollision) == true)
 	{
 		InteractionCollision->OnComponentBeginOverlap.AddDynamic(this, &AREPuzzleInteractableActor::OnInteractionPromptBeginOverlap);
 		InteractionCollision->OnComponentEndOverlap.AddDynamic(this, &AREPuzzleInteractableActor::OnInteractionPromptEndOverlap);
 	}
+}
+
+void AREPuzzleInteractableActor::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	UnbindPuzzleManagerStateChanged();
+	PromptCandidateActors.Reset();
+	Super::EndPlay(EndPlayReason);
 }
 
 bool AREPuzzleInteractableActor::CanInteract(AActor* Interactor) const
@@ -106,27 +115,94 @@ void AREPuzzleInteractableActor::HandleInteract(AActor* Interactor)
 {
 }
 
+void AREPuzzleInteractableActor::HandlePuzzleManagerChanged()
+{
+	Super::HandlePuzzleManagerChanged();
+	BindPuzzleManagerStateChanged();
+	RefreshInteractionPromptVisibility();
+}
+
 void AREPuzzleInteractableActor::OnInteractionPromptBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (ShouldShowPromptForActor(OtherActor) == true)
+	if (ShouldTrackPromptActor(OtherActor) == true)
 	{
-		SetInteractionPromptVisible(true);
+		AddPromptCandidate(OtherActor);
+		RefreshInteractionPromptVisibility();
 	}
 }
 
 void AREPuzzleInteractableActor::OnInteractionPromptEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-	if (ShouldShowPromptForActor(OtherActor) == true)
+	if (ShouldTrackPromptActor(OtherActor) == true)
 	{
-		SetInteractionPromptVisible(false);
+		RemovePromptCandidate(OtherActor);
+		RefreshInteractionPromptVisibility();
 	}
+}
+
+void AREPuzzleInteractableActor::OnBoundPuzzleStateChanged(EREPuzzleState NewState)
+{
+	RefreshInteractionPromptVisibility();
+}
+
+bool AREPuzzleInteractableActor::ShouldTrackPromptActor(AActor* Actor) const
+{
+	const APawn* Pawn = Cast<APawn>(Actor);
+	return IsValid(Pawn) == true && Pawn->IsLocallyControlled() == true;
 }
 
 bool AREPuzzleInteractableActor::ShouldShowPromptForActor(AActor* Actor) const
 {
-	const APawn* Pawn = Cast<APawn>(Actor);
 	const bool bHasPromptPresenter = IsValid(InteractionPromptWidgetClass) == true || bUseNativePromptFallback == true;
-	return IsValid(Pawn) == true && Pawn->IsLocallyControlled() == true && bHasPromptPresenter == true;
+	return ShouldTrackPromptActor(Actor) == true && bHasPromptPresenter == true && CanUseElement(Actor) == true;
+}
+
+void AREPuzzleInteractableActor::AddPromptCandidate(AActor* Actor)
+{
+	if (IsValid(Actor) == false)
+	{
+		return;
+	}
+
+	for (const TWeakObjectPtr<AActor>& Candidate : PromptCandidateActors)
+	{
+		if (Candidate.Get() == Actor)
+		{
+			return;
+		}
+	}
+
+	PromptCandidateActors.Add(Actor);
+}
+
+void AREPuzzleInteractableActor::RemovePromptCandidate(AActor* Actor)
+{
+	PromptCandidateActors.RemoveAll([Actor](const TWeakObjectPtr<AActor>& Candidate)
+	{
+		return Candidate.IsValid() == false || Candidate.Get() == Actor;
+	});
+}
+
+void AREPuzzleInteractableActor::RefreshInteractionPromptVisibility()
+{
+	bool bShouldShow = false;
+
+	for (int32 Index = PromptCandidateActors.Num() - 1; Index >= 0; --Index)
+	{
+		AActor* CandidateActor = PromptCandidateActors[Index].Get();
+		if (IsValid(CandidateActor) == false)
+		{
+			PromptCandidateActors.RemoveAtSwap(Index);
+			continue;
+		}
+
+		if (ShouldShowPromptForActor(CandidateActor) == true)
+		{
+			bShouldShow = true;
+		}
+	}
+
+	SetInteractionPromptVisible(bShouldShow);
 }
 
 void AREPuzzleInteractableActor::SetInteractionPromptVisible(bool bVisible)
@@ -189,4 +265,31 @@ void AREPuzzleInteractableActor::RefreshInteractionPromptText() const
 	{
 		PromptTextBlock->SetText(InteractionPromptText);
 	}
+}
+
+void AREPuzzleInteractableActor::BindPuzzleManagerStateChanged()
+{
+	AREPuzzleManager* CurrentManager = PuzzleManager.Get();
+	if (BoundPuzzleManager.Get() == CurrentManager)
+	{
+		return;
+	}
+
+	UnbindPuzzleManagerStateChanged();
+
+	if (IsValid(CurrentManager) == true)
+	{
+		CurrentManager->OnPuzzleStateChanged.AddUniqueDynamic(this, &AREPuzzleInteractableActor::OnBoundPuzzleStateChanged);
+		BoundPuzzleManager = CurrentManager;
+	}
+}
+
+void AREPuzzleInteractableActor::UnbindPuzzleManagerStateChanged()
+{
+	if (AREPuzzleManager* Manager = BoundPuzzleManager.Get())
+	{
+		Manager->OnPuzzleStateChanged.RemoveDynamic(this, &AREPuzzleInteractableActor::OnBoundPuzzleStateChanged);
+	}
+
+	BoundPuzzleManager.Reset();
 }

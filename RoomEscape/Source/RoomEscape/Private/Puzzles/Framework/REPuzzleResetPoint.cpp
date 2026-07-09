@@ -14,3 +14,23 @@ AREPuzzleResetPoint::AREPuzzleResetPoint()
 	ArrowComponent->SetupAttachment(SceneRoot);
 	ArrowComponent->ArrowSize = 1.5f;
 }
+
+FName AREPuzzleResetPoint::GetCheckpointId() const
+{
+	return CheckpointId;
+}
+
+int32 AREPuzzleResetPoint::GetCheckpointOrder() const
+{
+	return CheckpointOrder;
+}
+
+bool AREPuzzleResetPoint::CanUseAsCheckpoint() const
+{
+	return bUseAsCheckpoint;
+}
+
+FTransform AREPuzzleResetPoint::GetCheckpointTransform() const
+{
+	return GetActorTransform();
+}
