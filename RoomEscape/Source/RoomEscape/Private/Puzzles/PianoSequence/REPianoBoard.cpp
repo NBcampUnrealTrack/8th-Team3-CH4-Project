@@ -8,6 +8,8 @@
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
+#include "Game/RENotifySubsystem.h"
+#include "AbilitySystem/NativeGameplayTags.h"
 
 AREPianoBoard::AREPianoBoard()
 {
@@ -47,6 +49,33 @@ void AREPianoBoard::GenerateKeyPermutationOnce(const UREPianoPatternData* InPatt
 		const int32 SwapIndex = FMath::RandRange(0, Index);
 		KeyPermutation.Swap(Index, SwapIndex);
 	}
+
+#if !UE_BUILD_SHIPPING
+	// 디버그 전용 - 셔플된 슬롯-음 매핑을 로그에 한 번 출력 (서버에서만 실행됨)
+	FString MapStr;
+	for (int32 Slot = 0; Slot < KeyPermutation.Num(); ++Slot)
+	{
+		const int32 NoteIndex = KeyPermutation[Slot];
+		FString Label = FString::FromInt(NoteIndex);
+		if (const FREPianoNote* Note = InPatternData->FindNote(NoteIndex))
+		{
+			if (Note->NoteLabel.IsEmpty() == false)
+			{
+				Label = Note->NoteLabel.ToString();
+			}
+		}
+		MapStr += FString::Printf(TEXT("[슬롯 %d = %s] "), Slot, *Label);
+	}
+	if (URENotifySubsystem* Notify = URENotifySubsystem::GetInstance(this))
+	{
+		Notify->NotifyEvent(RETag::Event::Debug::Piano, FString::Printf(TEXT("슬롯-음 매핑: %s"), *MapStr));
+	}
+#endif
+}
+
+int32 AREPianoBoard::GetSlotIndexForNote(int32 NoteIndex) const
+{
+	return KeyPermutation.IndexOfByKey(NoteIndex);
 }
 
 void AREPianoBoard::HandleInteract(AActor* Interactor)

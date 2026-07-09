@@ -37,6 +37,7 @@ namespace RETag
 		namespace Debug
 		{
 			UE_DEFINE_GAMEPLAY_TAG(Test, "Event.Debug.Test");
+			UE_DEFINE_GAMEPLAY_TAG(Piano, "Event.Debug.Piano");
 		}
 	}
 

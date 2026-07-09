@@ -37,6 +37,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Piano Sequence")
 	void RequestSubmitKeySlot(int32 SlotIndex);
 
+	// 디버그용 - 특정 음(NoteIndex)이 지금 몇 번 슬롯(버튼)에 매핑돼 있는지. 없으면 INDEX_NONE
+	int32 GetSlotIndexForNote(int32 NoteIndex) const;
+
 	// 눌린 슬롯의 실제 음 피드백 (Manager Multicast에서 호출됨)
 	void PlayNote(int32 NoteIndex, FLinearColor GlowColor, USoundBase* NoteSound, float Duration);
 
