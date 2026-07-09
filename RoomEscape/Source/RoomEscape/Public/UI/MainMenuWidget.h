@@ -6,8 +6,7 @@
 #include "CommonActivatableWidget.h"
 #include "MainMenuWidget.generated.h"
 
-class UCommonButtonBase;
-class UCommonActivatableWidgetStack;
+class URETextButtonBase;
 
 /**
  * 
@@ -21,16 +20,11 @@ public:
 	virtual void NativeConstruct() override;
 	
 protected:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (BindWidget))
-	TObjectPtr<class UCommonAnimatedSwitcher> Switcher_MenuButton;
+	// 게임 시작 버튼
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (BindWidget), Category = "Layout")
+	TObjectPtr<URETextButtonBase> Button_Play;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (BindWidget))
-	TObjectPtr<UCommonActivatableWidgetStack> WidgetStack_Popup;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (BindWidget))
-	TObjectPtr<UCommonActivatableWidgetStack> WidgetStack_Primary;
-	
-	TSubclassOf<class UREPopupWidget> NotifyPopupWidgetClass;
-
-protected:
+	// 게임 종료 버튼
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (BindWidget), Category = "Layout")
+	TObjectPtr<URETextButtonBase> Button_Quit;
 };

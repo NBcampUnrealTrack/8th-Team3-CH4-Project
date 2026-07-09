@@ -35,13 +35,20 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"), Category = "Layout")
 	TArray<FVector2D> EntrySpacingPatterns;
 
+	UPROPERTY()
+	TMap<FString, URETextButtonBase*> Map_PopupButton;
+
 public:
+	// Popup UI의 Title 또는 안내 문구를 설정하는 함수
+	UFUNCTION(BlueprintCallable)
 	void SetPopupContent(FText TextContent);
 
+	// Popup UI에 버튼을 추가하는 함수
 	UFUNCTION(BlueprintCallable)
 	class URETextButtonBase* AddPopupButton(FText Text_Button);
 
 protected:
+	// Popup UI의 HorizontalBox에 Spacer를 추가하는 함수
 	UFUNCTION(BlueprintCallable)
 	void AddSpacer(const int32& SpacerPatternIndex);
 };

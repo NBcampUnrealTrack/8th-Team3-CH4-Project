@@ -30,6 +30,12 @@ URETextButtonBase* UREPopupWidget::AddPopupButton(FText Text_Button)
 		return nullptr;
 	}
 
+	// 기존에 동일한 버튼이 존재하면 해당 버튼을 반환
+	if (Map_PopupButton.Contains(Text_Button.ToString()) == true)
+	{
+		return Map_PopupButton[Text_Button.ToString()];
+	}
+
 	// HorizontalBox에 다른 버튼이 존재하면 Spacer 추가
 	if (HorizontalBox_PopupButtons->HasAnyChildren() == true)
 	{
@@ -48,6 +54,9 @@ URETextButtonBase* UREPopupWidget::AddPopupButton(FText Text_Button)
 
 	// Horizontal Box에 버튼 추가
 	HorizontalBox_PopupButtons->AddChildToHorizontalBox(NewButton);
+
+	// 생성된 버튼 목록에 NewButton 추가
+	Map_PopupButton.Add(Text_Button.ToString(), NewButton);
 
 	return NewButton;
 }
