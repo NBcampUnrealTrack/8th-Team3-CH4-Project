@@ -24,4 +24,24 @@ protected:
 	// Session의 비밀번호를 입력받는 EditableTextBox
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (BindWidget), Category = "Layout")
 	TObjectPtr<UEditableTextBox> InputField_SessionPassword;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Layout")
+	TSubclassOf<UCommonActivatableWidget> SessionRoomWidgetClass;
+
+public:
+	UFUNCTION(BlueprintCallable)
+	void AddPopupButton_HostGame();
+
+	UFUNCTION(BlueprintCallable)
+	void HostGameSession();
+
+	UFUNCTION(BlueprintCallable)
+	void AddPopupButton_JoinGame();
+
+	UFUNCTION(BlueprintCallable)
+	void JoinGameSession();
+
+protected:
+	UFUNCTION(BlueprintCallable)
+	void OnCreateOrJoinSessionRoom();
 };

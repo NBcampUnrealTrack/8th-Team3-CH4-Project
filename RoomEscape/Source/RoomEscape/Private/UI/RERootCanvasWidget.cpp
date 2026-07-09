@@ -57,12 +57,12 @@ void URERootCanvasWidget::HideLayerWhenPopup()
 	// Popup Widget이 유효하면 Primary Layer를 Collapsed 처리
 	if (IsValid(PrimaryLayer) == true)
 	{
-		PrimaryLayer->SetVisibility(IsValid(PopupWidget) == true ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
+		PrimaryLayer->SetVisibility(IsValid(PopupWidget) == true ? ESlateVisibility::Collapsed : ESlateVisibility::SelfHitTestInvisible);
 	}
 
 	// Popup Widget이 유효하면 Gameplay Layer를 Collapsed 처리
 	if (IsValid(GameplayLayer) == true)
 	{
-		GameplayLayer->SetVisibility(IsValid(PopupWidget) == true ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
+		GameplayLayer->SetVisibility(IsValid(PopupWidget) == true ? ESlateVisibility::Collapsed : ESlateVisibility::SelfHitTestInvisible);
 	}
 }

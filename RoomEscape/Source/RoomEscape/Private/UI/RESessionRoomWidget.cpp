@@ -38,7 +38,7 @@ void URESessionRoomWidget::InitializeWidgetByActor_Implementation(AActor* Actor)
 {
 }
 
-void URESessionRoomWidget::OnPostJoinPlayer(const APlayerState* JoinedPlayerState)
+void URESessionRoomWidget::AddJoinedPlayer(APlayerState* JoinedPlayerState)
 {
 	// Scroll Box 또는 PlayerState가 유효하지 않으면 함수 조기 종료
 	if (IsValid(ScrollBox_Players) == false || IsValid(JoinedPlayerState) == false)
@@ -46,24 +46,24 @@ void URESessionRoomWidget::OnPostJoinPlayer(const APlayerState* JoinedPlayerStat
 		return;
 	}
 
-	// 플레이어의 Ready 상태를 담당하는 컴포넌트 참조 및 유효성 확인
-	URESessionPlayerStateComponent* SessionComponent = JoinedPlayerState->FindComponentByClass<URESessionPlayerStateComponent>();
-	if (IsValid(SessionComponent) == false)
+	// 플레이어의 Ready 상태를 관리하는 Component 확인
+	URESessionPlayerStateComponent* SessionRoomComponent = JoinedPlayerState->FindComponentByClass<URESessionPlayerStateComponent>();
+	if (IsValid(SessionRoomComponent) == false)
 	{
 		return;
 	}
 
-	// 플레이어 고유의 ID 얻기
-	int32 PlayerId = JoinedPlayerState->GetPlayerId();
+	// 플레이어를 대표하는 ID 얻기(플레이어 인덱스)
+	int32 PlayerID = JoinedPlayerState->GetPlayerId();
 
-	// 해당 플레이어를 담당하는 TextBlock이 존재하면 Ready 상태 변경에 대한 함수 실행
-	if (Map_PlayerTextBlock.Contains(PlayerId) == true)
+	// 참여한 플레이어를 대표하는 TextBlock이 존재하면 해당 TextBlock 업데이트
+	if (Map_PlayerTextBlock.Contains(PlayerID) == true)
 	{
-		OnReadyStateChanged(SessionComponent, SessionComponent->IsPlayerReady());
+		OnReadyStateChanged(JoinedPlayerState, SessionRoomComponent->IsPlayerReady());
 		return;
 	}
 
-	// 플레이어 이름, 준비 상태를 표시할 TextBlock 생성 및 유효성 검사
+	// 참여한 플레이어의 Ready 상태를 나타내는 TextBlock 생성
 	UTextBlock* TextBlock_Player = WidgetTree->ConstructWidget<UTextBlock>();
 	if (IsValid(TextBlock_Player) == false)
 	{
@@ -72,28 +72,34 @@ void URESessionRoomWidget::OnPostJoinPlayer(const APlayerState* JoinedPlayerStat
 
 	// 표시될 Text 설정
 	FString DisplayString = JoinedPlayerState->GetPlayerName();
-	if (SessionComponent->IsPlayerReady() == true)
+	if (SessionRoomComponent->IsPlayerReady() == true)
 	{
+		// Ready 상태일 경우 Ready 문구 추가
 		DisplayString.Append(TEXT("  (Ready)"));
 	}
+
+	// TextBlock의 Text 업데이트
 	TextBlock_Player->SetText(FText::FromString(DisplayString));
 
-	// ScrollBox에 플레이어 표시
+	// ScrollBox에 플레이어 담당 TextBlock 추가
 	ScrollBox_Players->AddChild(TextBlock_Player);
 
 	// 플레이어를 담당하는 TextBlock의 Instance 저장
-	Map_PlayerTextBlock.Add(PlayerId, TextBlock_Player);
-	return;
+	Map_PlayerTextBlock.Add(PlayerID, TextBlock_Player);
+
+	// 플레이어의 Ready 상태 변경에 대한 이벤트 연결
+	SessionRoomComponent->OnReadyStateChanged.AddUniqueDynamic(this, &ThisClass::OnReadyStateChanged);
 }
 
-void URESessionRoomWidget::OnPreLeavePlayer(const APlayerState* LeavePlayerState)
+void URESessionRoomWidget::RemoveLeavePlayer(APlayerState* LeavePlayerState)
 {
 	// 플레이어 고유의 ID 얻기
-	int32 PlayerId = LeavePlayerState->GetPlayerId();
+	int32 PlayerID = LeavePlayerState->GetPlayerId();
 	UTextBlock* TextBlock_Player = nullptr;
 
 	// 해당 플레이어를 담당하는 TextBlock 얻기
-	if (Map_PlayerTextBlock.RemoveAndCopyValue(PlayerId, TextBlock_Player) == false)
+	// 플레이어를 담당하는 TextBlock을 Map에서 제거
+	if (Map_PlayerTextBlock.RemoveAndCopyValue(PlayerID, TextBlock_Player) == false)
 	{
 		return;
 	}
@@ -103,14 +109,8 @@ void URESessionRoomWidget::OnPreLeavePlayer(const APlayerState* LeavePlayerState
 	return;
 }
 
-void URESessionRoomWidget::OnReadyStateChanged(const UActorComponent* InstigatorComponent, bool bNewIsPlayerReady)
+void URESessionRoomWidget::OnReadyStateChanged(APlayerState* InstigatorState, bool bNewIsPlayerReady)
 {
-	if (IsValid(InstigatorComponent) == false)
-	{
-		return;
-	}
-
-	APlayerState* InstigatorState = Cast<APlayerState>(InstigatorComponent->GetOwner());
 	if (IsValid(InstigatorState) == false)
 	{
 		return;
