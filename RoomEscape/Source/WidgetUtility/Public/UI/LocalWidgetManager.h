@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "Subsystems/LocalPlayerSubsystem.h"
-#include "Subsystems/WorldSubsystem.h"
 #include "Blueprint/UserWidget.h"
 #include "LocalWidgetManager.generated.h"
 
@@ -16,7 +15,7 @@ DECLARE_DYNAMIC_DELEGATE_OneParam(FOnWidgetCreatedDelegate, UWidget*, CreatedWid
  * Find, Add, Remove를 통하여 Widget을 검색, 추가 및 제거
  */
 UCLASS()
-class WIDGETUTILITY_API ULocalWidgetManager : public UWorldSubsystem
+class WIDGETUTILITY_API ULocalWidgetManager : public ULocalPlayerSubsystem
 {
 	GENERATED_BODY()
 	

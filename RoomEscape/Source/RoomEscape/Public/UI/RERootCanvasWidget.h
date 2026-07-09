@@ -15,6 +15,11 @@ UCLASS()
 class ROOMESCAPE_API URERootCanvasWidget : public UCommonActivatableWidget
 {
 	GENERATED_BODY()
+	
+public:
+	virtual void NativeConstruct() override;
+
+	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 
 protected:
 	// MainMenu, HUD와 같이 특별한 조건이 없는 경우 항상 표시되어야 하는 UI를 위한 Layer
@@ -57,4 +62,8 @@ public:
 	// 화면 Fade out 효과같은 UI를 활용한 Visual Effect 처리를 담당하는 UI를 위한 Layer
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE UCommonActivatableWidgetStack* GetVisualEffectWidgetStack() const { return VisualEffectLayer; }
+
+protected:
+	UFUNCTION(BlueprintCallable)
+	void HideLayerWhenPopup();
 };

@@ -14,9 +14,23 @@ ULocalWidgetManager* ULocalWidgetManager::GetInstance(const UObject* WorldContex
 
 	// 월드 유효성 확인
 	UWorld* World = WorldContextObject->GetWorld();
+	if (IsValid(World) == false)
+	{
+		return nullptr;
+	}
+
+	// LocalPlayer의 Controller 객체 얻기 및 유효성 확인
+	APlayerController* LocalPlayerController = GEngine->GetFirstLocalPlayerController(WorldContextObject->GetWorld());
+	if (IsValid(LocalPlayerController) == false)
+	{
+		return nullptr;
+	}
+
+	// LocalPlayer 얻기
+	ULocalPlayer* LocalPlayer = LocalPlayerController->GetLocalPlayer();
 
 	// SubSystem 얻기
-	return IsValid(World) == true ? World->GetSubsystem<ULocalWidgetManager>() : nullptr;
+	return IsValid(LocalPlayer) == true ? LocalPlayer->GetSubsystem<ULocalWidgetManager>() : nullptr;
 }
 
 UWidget* ULocalWidgetManager::FindWidget(FName WidgetName)
@@ -60,14 +74,14 @@ UUserWidget* ULocalWidgetManager::AddWidget(FName WidgetName, TSubclassOf<UUserW
 	WidgetMap.Remove(WidgetName);
 
 	// 로컬 플레이어 객체 얻기
-	APlayerController* LocalPlayerController = GEngine->GetFirstLocalPlayerController(GetWorld());
-	if (IsValid(LocalPlayerController) == false)
+	ULocalPlayer* LocalPlayer = GetLocalPlayer();
+	if (IsValid(LocalPlayer) == false)
 	{
 		return nullptr;
 	}
 
 	// Instance 생성
-	UUserWidget* UserWidgetInstance = CreateWidget<UUserWidget>(LocalPlayerController, WidgetClass);
+	UUserWidget* UserWidgetInstance = CreateWidget<UUserWidget>(LocalPlayer->PlayerController, WidgetClass);
 
 	// Instance 저장
 	WidgetMap.Add(WidgetName, UserWidgetInstance);
