@@ -3,13 +3,14 @@
 #include "CoreMinimal.h"
 #include "Interaction/REInteractable.h"
 #include "Puzzles/Framework/REPuzzleActor.h"
+#include "Puzzles/Framework/REPuzzleTypes.h"
 #include "REPuzzleInteractableActor.generated.h"
 
+class APawn;
 class UBoxComponent;
+class UTextRenderComponent;
 class UUserWidget;
 class UWidgetComponent;
-class UTextRenderComponent;
-class APawn;
 
 UCLASS(Abstract, Blueprintable)
 class ROOMESCAPE_API AREPuzzleInteractableActor : public AREPuzzleActor, public IREInteractable
@@ -20,6 +21,7 @@ public:
 	AREPuzzleInteractableActor();
 
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Puzzle|Interaction", meta = (AllowPrivateAccess = "true"))
@@ -60,6 +62,7 @@ protected:
 	virtual void Interact_Implementation(AActor* Interactor) override;
 	virtual bool CanUseElement(AActor* Interactor) const;
 	virtual void HandleInteract(AActor* Interactor);
+	virtual void HandlePuzzleManagerChanged() override;
 
 	UFUNCTION()
 	void OnInteractionPromptBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
@@ -67,8 +70,20 @@ protected:
 	UFUNCTION()
 	void OnInteractionPromptEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
+	UFUNCTION()
+	void OnBoundPuzzleStateChanged(EREPuzzleState NewState);
+
 private:
+	TArray<TWeakObjectPtr<AActor>> PromptCandidateActors;
+	TWeakObjectPtr<AREPuzzleManager> BoundPuzzleManager;
+
+	bool ShouldTrackPromptActor(AActor* Actor) const;
 	bool ShouldShowPromptForActor(AActor* Actor) const;
+	void AddPromptCandidate(AActor* Actor);
+	void RemovePromptCandidate(AActor* Actor);
+	void RefreshInteractionPromptVisibility();
 	void SetInteractionPromptVisible(bool bVisible);
 	void RefreshInteractionPromptText() const;
+	void BindPuzzleManagerStateChanged();
+	void UnbindPuzzleManagerStateChanged();
 };

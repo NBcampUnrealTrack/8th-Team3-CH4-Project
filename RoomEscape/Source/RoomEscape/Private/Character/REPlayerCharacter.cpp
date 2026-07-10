@@ -126,6 +126,11 @@ bool AREPlayerCharacter::ServerToggleFlashlight_Validate()
 	return true;
 }
 
+bool AREPlayerCharacter::IsFlashlightOn() const
+{
+	return bFlashlightOn;
+}
+
 AActor* AREPlayerCharacter::TraceForInteractable(FHitResult& OutHit) const
 {
 	if (!FirstPersonCamera)

@@ -30,6 +30,9 @@ public:
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerToggleFlashlight();
 
+	UFUNCTION(BlueprintPure, Category="Flashlight")
+	bool IsFlashlightOn() const;
+
 	AActor* TraceForInteractable(FHitResult& OutHit) const;
 
 protected:

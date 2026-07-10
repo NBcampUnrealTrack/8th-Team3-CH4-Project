@@ -10,13 +10,17 @@ class AREBombDevice;
 class AREBombWire;
 class AREBombButton;
 class UREBombFeedbackWidget;
+class UREFadeWidget;
+class AREPuzzleResetPoint;
 class APlayerController;
 class APlayerState;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FREBombTimeChangedSignature, float, RemainingTimeSeconds, float, TimeLimitSeconds);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FREBombStepChangedSignature, int32, CurrentStepIndex, int32, TotalStepCount);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FREBombInputResultSignature, AActor*, SourceActor, bool, bCorrect, FText, ResultMessage);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FREBombExplosionSignature, AActor*, SourceActor, FText, ResultMessage);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FREBombRuntimeResetSignature);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FREBombCheckpointRestoredSignature);
 
 UCLASS(Blueprintable)
 class ROOMESCAPE_API AREBombDefusalManager : public AREPuzzleManager
@@ -40,20 +44,38 @@ public:
 	FREBombInputResultSignature OnBombInputResult;
 
 	UPROPERTY(BlueprintAssignable, Category = "Bomb Defusal")
+	FREBombExplosionSignature OnBombExploded;
+
+	UPROPERTY(BlueprintAssignable, Category = "Bomb Defusal")
 	FREBombRuntimeResetSignature OnBombRuntimeReset;
+
+	UPROPERTY(BlueprintAssignable, Category = "Bomb Defusal")
+	FREBombCheckpointRestoredSignature OnBombCheckpointRestored;
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Bomb Defusal|Data", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UREBombPatternData> PatternData;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Bomb Defusal|Rule", meta = (AllowPrivateAccess = "true"))
-	bool bAutoResetOnFailure = true;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Bomb Defusal|Bad Ending", meta = (AllowPrivateAccess = "true"))
+	FName BadEndingCheckpointId = TEXT("BombBadEnding");
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Bomb Defusal|Rule", meta = (ClampMin = "0.0", AllowPrivateAccess = "true"))
-	float ResetDelaySeconds = 2.0f;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Bomb Defusal|Bad Ending", meta = (AllowPrivateAccess = "true"))
+	TArray<TObjectPtr<AREPuzzleResetPoint>> BadEndingCheckpointPoints;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Bomb Defusal|Rule", meta = (ClampMin = "0.0", AllowPrivateAccess = "true"))
-	float FailureRestrictionSeconds = 60.0f;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Bomb Defusal|Bad Ending", meta = (ClampMin = "0.0", AllowPrivateAccess = "true"))
+	float BadEndingFadeOutSeconds = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Bomb Defusal|Bad Ending", meta = (ClampMin = "0.0", AllowPrivateAccess = "true"))
+	float BadEndingBlackHoldSeconds = 0.25f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Bomb Defusal|Bad Ending", meta = (ClampMin = "0.0", AllowPrivateAccess = "true"))
+	float BadEndingFadeInSeconds = 0.75f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Bomb Defusal|Bad Ending", meta = (ClampMin = "0", AllowPrivateAccess = "true"))
+	int32 BadEndingFadeWidgetZOrder = 1000;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Bomb Defusal|Bad Ending", meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<UREFadeWidget> BadEndingFadeWidgetClass;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Bomb Defusal|Feedback", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<UREBombFeedbackWidget> FeedbackWidgetClass;
@@ -79,8 +101,12 @@ protected:
 	UPROPERTY(Transient)
 	TObjectPtr<UREBombFeedbackWidget> ActiveFeedbackWidget;
 
+	UPROPERTY(Transient)
+	TObjectPtr<UREFadeWidget> ActiveBadEndingFadeWidget;
+
 	FTimerHandle BombTimerHandle;
-	FTimerHandle FailureResetTimerHandle;
+	FTimerHandle BadEndingResetTimerHandle;
+	FTimerHandle BadEndingFadeWidgetCleanupTimerHandle;
 
 public:
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Bomb Defusal")
@@ -101,8 +127,8 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Bomb Defusal")
 	float GetTimeLimitSeconds() const;
 
-	UFUNCTION(BlueprintPure, Category = "Bomb Defusal")
-	float GetFailureRestrictionSeconds() const;
+	UFUNCTION(BlueprintPure, Category = "Bomb Defusal|Bad Ending")
+	float GetBadEndingResetDelaySeconds() const;
 
 	UFUNCTION(BlueprintPure, Category = "Bomb Defusal")
 	bool IsBombRunning() const;
@@ -123,6 +149,7 @@ protected:
 	virtual void HandlePuzzleLocked() override;
 	virtual void HandlePuzzleSolved() override;
 	virtual void HandlePuzzleFailed() override;
+	virtual void HandleSavedSolvedStateRestored() override;
 
 	UFUNCTION()
 	void OnRep_CurrentStepIndex();
@@ -134,13 +161,25 @@ protected:
 	void MulticastBombInputResult(AActor* SourceActor, APlayerState* TargetPlayerState, bool bCorrect, const FText& ResultMessage);
 
 	UFUNCTION(NetMulticast, Reliable)
+	void MulticastBombExploded(AActor* SourceActor, const FText& ResultMessage);
+
+	UFUNCTION(NetMulticast, Reliable)
 	void MulticastBombRuntimeReset();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastBombCheckpointRestored();
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "Bomb Defusal")
 	void ReceiveBombInputResult(AActor* SourceActor, bool bCorrect, const FText& ResultMessage);
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "Bomb Defusal")
+	void ReceiveBombExploded(AActor* SourceActor, const FText& ResultMessage);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Bomb Defusal")
 	void ReceiveBombRuntimeReset();
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Bomb Defusal")
+	void ReceiveBombCheckpointRestored();
 
 private:
 	void StartActiveRound();
@@ -154,7 +193,12 @@ private:
 	void AdvanceStep(AActor* SourceActor, AActor* Interactor, const FText& ResultMessage);
 	void CompleteBomb(AActor* SourceActor, AActor* Interactor);
 	void FailBomb(AActor* SourceActor, AActor* Interactor, const FText& ResultMessage);
-	void ResetAfterFailure();
+	void ResolveBadEnding();
+	void TeleportPlayersToBadEndingCheckpoints();
+	void ResolveBadEndingCheckpointPoints(TArray<AREPuzzleResetPoint*>& OutCheckpointPoints) const;
+	void PlayBadEndingFadeOutLocal();
+	void PlayBadEndingFadeInLocal();
+	void CleanupBadEndingFadeWidgetLocal();
 	void ShowFeedbackWidgetLocal(AActor* SourceActor, APlayerState* TargetPlayerState, bool bCorrect, const FText& ResultMessage);
 	APlayerController* ResolveLocalPlayerController(APlayerState* TargetPlayerState) const;
 	FText BuildSuccessFeedbackMessage() const;

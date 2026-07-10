@@ -35,6 +35,15 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Puzzle", meta = (AllowPrivateAccess = "true"))
 	bool bStartActive = true;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Puzzle|Progress", meta = (AllowPrivateAccess = "true"))
+	bool bSaveSolvedState = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Puzzle|Progress", meta = (AllowPrivateAccess = "true"))
+	bool bAutoRestoreSavedSolvedState = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Puzzle|Progress", meta = (AllowPrivateAccess = "true"))
+	FName ProgressId = NAME_None;
+
 	UPROPERTY(ReplicatedUsing = OnRep_State, BlueprintReadOnly, Category = "Puzzle", meta = (AllowPrivateAccess = "true"))
 	EREPuzzleState State = EREPuzzleState::Locked;
 
@@ -52,6 +61,12 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Puzzle")
 	EREPuzzleState GetPuzzleState() const;
+
+	UFUNCTION(BlueprintPure, Category = "Puzzle|Progress")
+	FName GetProgressId() const;
+
+	UFUNCTION(BlueprintPure, Category = "Puzzle|Progress")
+	bool ShouldSaveSolvedState() const;
 
 	UFUNCTION(BlueprintPure, Category = "Puzzle")
 	bool IsLocked() const;
@@ -77,8 +92,14 @@ protected:
 	virtual void HandlePuzzleLocked();
 	virtual void HandlePuzzleSolved();
 	virtual void HandlePuzzleFailed();
+	virtual void HandleSavedSolvedStateRestored();
 
 	void SetPuzzleState(EREPuzzleState NewState);
 	void MarkSolved();
 	void MarkFailed();
+
+private:
+	FName ResolveProgressId() const;
+	bool TryRestoreSavedSolvedState();
+	void SaveSolvedProgress() const;
 };
