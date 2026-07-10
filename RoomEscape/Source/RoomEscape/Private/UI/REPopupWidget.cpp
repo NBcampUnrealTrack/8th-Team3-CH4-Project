@@ -4,6 +4,7 @@
 #include "UI/REPopupWidget.h"
 #include "Blueprint/WidgetTree.h"
 #include "Components/HorizontalBox.h"
+#include "Components/HorizontalBoxSlot.h"
 #include "Components/TextBlock.h"
 #include "Components/Spacer.h"
 #include "UI/RETextButtonBase.h"
@@ -61,6 +62,12 @@ URETextButtonBase* UREPopupWidget::AddPopupButton(FText Text_Button)
 	return NewButton;
 }
 
+void UREPopupWidget::AddPopupButton_Cancel()
+{
+	URETextButtonBase* Button_Cancel = AddPopupButton(FText::FromString(TEXT("Cancel")));
+	Button_Cancel->OnButtonClicked.AddUniqueDynamic(this, &ThisClass::DeactivateWidget);
+}
+
 void UREPopupWidget::AddSpacer(const int32& SpacerPatternIndex)
 {
 	// Spacer가 추가될 Widget 유효성 검사
@@ -86,5 +93,6 @@ void UREPopupWidget::AddSpacer(const int32& SpacerPatternIndex)
 	Spacer->SetSize(SpaceSize);
 
 	// HorizontalBox에 Spacer 추가
-	HorizontalBox_PopupButtons->AddChildToHorizontalBox(Spacer);
+	UHorizontalBoxSlot* SpacerSlot = HorizontalBox_PopupButtons->AddChildToHorizontalBox(Spacer);
+	SpacerSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
 }
