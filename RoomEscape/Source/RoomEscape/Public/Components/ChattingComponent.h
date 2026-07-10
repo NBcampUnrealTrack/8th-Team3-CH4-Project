@@ -40,7 +40,7 @@ protected:
 
 	// 채팅 UI 클래스
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	TSubclassOf<UUserWidget> ChattingWidgetClass;
+	TSubclassOf<class UChatBoxWidget> ChattingWidgetClass;
 
 protected:
 	// (Client 호출, Server 실행) 메시지를 전송하는 함수

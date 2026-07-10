@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "CommonActivatableWidget.h"
-#include "UI/InitializeUtilityInterface.h"
 #include "RESessionRoomWidget.generated.h"
 
 class UTextBlock;
@@ -16,20 +15,12 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSessionButtonClickedSignature);
  * 
  */
 UCLASS()
-class ROOMESCAPE_API URESessionRoomWidget : public UCommonActivatableWidget, public IInitializeUtilityInterface
+class ROOMESCAPE_API URESessionRoomWidget : public UCommonActivatableWidget
 {
 	GENERATED_BODY()
 
 public:
 	virtual void NativeConstruct() override;
-
-protected:
-	// IInitializeUtilityInterface을(를) 통해 상속됨
-	void InitializeWidgetByContextObject_Implementation(UObject* ContextObject) override;
-
-	void InitializeWidgetByComponent_Implementation(UActorComponent* Component) override;
-
-	void InitializeWidgetByActor_Implementation(AActor* Actor) override;
 
 public:
 	// ReadyButton을 
@@ -64,16 +55,21 @@ protected:
 	// PlayerState를 통하여 Ready상태를 나타내는 TextBlock의 인스턴스를 보관하는 Map
 	TMap<int32, UTextBlock*> Map_PlayerTextBlock;
 
+public:
+	UFUNCTION(BlueprintCallable)
+	void AddJoinedPlayer(APlayerState* JoinedPlayerState);
+
+	UFUNCTION(BlueprintCallable)
+	void RemoveLeavePlayer(APlayerState* LeavePlayerState);
+
 protected:
-	UFUNCTION()
-	void OnPostJoinPlayer(const APlayerState* JoinedPlayerState);
+	UFUNCTION(BlueprintCallable)
+	void OnExitButtonClicked();
 
-	UFUNCTION()
-	void OnPreLeavePlayer(const APlayerState* LeavePlayerState);
-
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable)
 	void OnReadyButtonClicked() { OnButtonClicked_Ready.Broadcast(); }
 
 	UFUNCTION()
-	void OnReadyStateChanged(const UActorComponent* InstigatorComponent, bool bNewIsPlayerReady);
+	void OnReadyStateChanged(APlayerState* InstigatorState, bool bNewIsPlayerReady);
+
 };

@@ -18,6 +18,7 @@ URESessionPlayerStateComponent::URESessionPlayerStateComponent()
 	PrimaryComponentTick.bCanEverTick = true;
 
 	// ...
+	SetIsReplicatedByDefault(true);
 }
 
 
@@ -27,13 +28,14 @@ void URESessionPlayerStateComponent::BeginPlay()
 	Super::BeginPlay();
 
 	// ...
-	
+	OwnerPlayerState = Cast<APlayerState>(GetOwner());
 }
 
 void URESessionPlayerStateComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
+	DOREPLIFETIME(ThisClass, bIsInSessionRoom);
 	DOREPLIFETIME(ThisClass, bIsPlayerReady);
 }
 
@@ -48,7 +50,6 @@ void URESessionPlayerStateComponent::TickComponent(float DeltaTime, ELevelTick T
 
 void URESessionPlayerStateComponent::InitWidget_Implementation()
 {
-	OwnerPlayerState = Cast<APlayerState>(GetOwner());
 	if (IsValid(OwnerPlayerState) == false)
 	{
 		return;
@@ -65,63 +66,208 @@ void URESessionPlayerStateComponent::InitWidget_Implementation()
 		return;
 	}
 
-	URERootCanvasWidget* RootCanvasWidget = WidgetManager->FindWidget<URERootCanvasWidget>(FName("RootCanvas"));
+	URERootCanvasWidget* RootCanvasWidget = Cast<URERootCanvasWidget>(WidgetManager->GetRootWidget());
 	if (IsValid(RootCanvasWidget) == false)
 	{
 		return;
 	}
 
-	UCommonActivatableWidgetStack* WidgetStack = RootCanvasWidget->GetPrimaryWidgetStack();
-	if (IsValid(WidgetStack) == false)
+	UCommonActivatableWidgetStack* PrimaryLayer = RootCanvasWidget->GetPrimaryWidgetStack();
+	if (IsValid(PrimaryLayer) == false)
 	{
 		return;
 	}
 
-	URESessionRoomWidget* SessionRoomWidget = WidgetStack->AddWidget<URESessionRoomWidget>(SessionRoomWidgetClass);
-	if (IsValid(SessionRoomWidget) == false)
+	SessionRoomWidgetInstance = PrimaryLayer->AddWidget<URESessionRoomWidget>(SessionRoomWidgetClass);
+	if (IsValid(SessionRoomWidgetInstance) == true)
 	{
-		return;
+		// Ready 버튼 클릭 이벤트 연결
+		SessionRoomWidgetInstance->OnButtonClicked_Ready.AddUniqueDynamic(this, &ThisClass::OnReadyButtonClicked);
 	}
-
-	// Ready 버튼 클릭 이벤트 연결
-	SessionRoomWidget->OnButtonClicked_Ready.AddUniqueDynamic(this, &ThisClass::OnReadyButtonClicked);
-
-	IInitializeUtilityInterface::Execute_InitializeWidgetByComponent(SessionRoomWidget, this);
+	return;
 }
 
-bool URESessionPlayerStateComponent::CheckAllPlayerIsReady()
+void URESessionPlayerStateComponent::JoinSessionRoom()
 {
-	if (GetOwnerRole() != ENetRole::ROLE_Authority)
+	// Session Room UI 생성
+	IWidgetInitializableInterface::Execute_InitWidget(this);
+
+	// 기존에 Session Room에 참여중인 플레이어 UI 등록
+	UpdateAllPlayersInSessionRoom();
+
+	// 서버에 플레이어가 Session Room에 참여하였음을 알림
+	ServerBroadcastPlayerInSessionRoom(true);
+}
+
+void URESessionPlayerStateComponent::LeaveSessionRoom()
+{
+	// 서버에 플레이어가 Session Room에 퇴장하였음을 알림
+	ServerBroadcastPlayerInSessionRoom(false);
+
+	// Session Room UI 제거
+	if (IsValid(SessionRoomWidgetInstance) == true)
 	{
-		return false;
+		SessionRoomWidgetInstance->DeactivateWidget();
+	}
+}
+
+void URESessionPlayerStateComponent::ServerBroadcastPlayerInSessionRoom_Implementation(bool bIsJoin)
+{
+	// 서버에서만 실행되도록 확인
+	if (IsValid(OwnerPlayerState) == false || OwnerPlayerState->HasAuthority() == false)
+	{
+		return;
 	}
 
-	// 전체 PlayerController 목록에서 수신자 선별
-	for (TActorIterator<APlayerController> It(GetWorld()); It; ++It)
-	{
-		// PlayerController 유효성 확인
-		APlayerController* ClientController = *It;
-		if (IsValid(ClientController) == false)
-		{
-			continue;
-		}
+	// Session Room에 참여하였는지를 판단하는 플래그 값 변경
+	bIsInSessionRoom = bIsJoin;
 
-		// PlayerState 얻기
-		APlayerState* ClientState = ClientController->PlayerState;
+	// World에 존재하는 모든 PlayerState 중에서 Session에 참여되어있는 모든 Client에게 전파
+	for (TActorIterator<APlayerState> It(GetWorld()); It; ++It)
+	{
+		// PlayerState의 유효성 검사
+		APlayerState* ClientState = *It;
 		if (IsValid(ClientState) == false)
 		{
 			continue;
 		}
 
-		// 플레이어의 Ready 상태 관리 컴포넌트 얻기
-		URESessionPlayerStateComponent* Component = ClientState->FindComponentByClass<URESessionPlayerStateComponent>();
-		if (IsValid(Component) == false || Component == this)
+		// Session Room 참여 상태를 관리하는 Component 얻기
+		URESessionPlayerStateComponent* SessionComponent = ClientState->FindComponentByClass<URESessionPlayerStateComponent>();
+		if (IsValid(SessionComponent) == false)
 		{
 			continue;
 		}
 
-		// 플레이어의 Ready 상태 확인
-		if (Component->IsPlayerReady() == false)
+		// 클라이언트가 현재 SessionRoom에 참여한 상태인지 확인
+		if (SessionComponent->bIsInSessionRoom == true)
+		{
+			// 클라이언트에게 자신(플레이어)의 SessionRoom에대한 상태가 변경되었음을 전파
+			SessionComponent->ClientBroadcastPlayerInSessionRoom(OwnerPlayerState, bIsJoin);
+		}
+	}
+}
+
+void URESessionPlayerStateComponent::ClientBroadcastPlayerInSessionRoom_Implementation(APlayerState* PlayerState, bool bIsJoin)
+{
+	// LocalPlayerState에서만 실행되도록 확인
+	if (IsValid(OwnerPlayerState) == false || OwnerPlayerState->HasLocalNetOwner() == false)
+	{
+		return;
+	}
+
+	// 생성된 Session Room UI 확인
+	if (IsValid(SessionRoomWidgetInstance) == false)
+	{
+		return;
+	}
+
+	GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Green, *FString::Printf(TEXT("New Client joined in Session - %s"), *PlayerState->GetPlayerName()));
+
+	// 참여한 Player를 UI에 추가 또는 제거
+	if (bIsJoin == true)
+	{
+		// 플레이어 추가
+		SessionRoomWidgetInstance->AddJoinedPlayer(PlayerState);
+	}
+	else
+	{
+		// 플레이어 제거
+		SessionRoomWidgetInstance->RemoveLeavePlayer(PlayerState);
+	}
+}
+
+void URESessionPlayerStateComponent::UpdateAllPlayersInSessionRoom()
+{
+	if (IsValid(SessionRoomWidgetInstance) == false)
+	{
+		return;
+	}
+
+	// World에 존재하는 모든 PlayerState 중에서 Session에 참여되어있는 모든 Client 검색
+	for (TActorIterator<APlayerState> It(GetWorld()); It; ++It)
+	{
+		// PlayerState의 유효성 검사
+		APlayerState* ClientState = *It;
+		if (IsValid(ClientState) == false)
+		{
+			continue;
+		}
+
+		// Session Room 참여 상태를 관리하는 Component 얻기
+		URESessionPlayerStateComponent* SessionComponent = ClientState->FindComponentByClass<URESessionPlayerStateComponent>();
+		if (IsValid(SessionComponent) == false)
+		{
+			continue;
+		}
+
+		// 클라이언트가 현재 SessionRoom에 참여한 상태인지 확인
+		if (SessionComponent->bIsInSessionRoom == true)
+		{
+			// 해당 플레이어가 현재 SessionRoom UI에 추가
+			SessionRoomWidgetInstance->AddJoinedPlayer(ClientState);
+		}
+	}
+}
+
+void URESessionPlayerStateComponent::OnReadyButtonClicked()
+{
+	// 컴포넌트를 소유한 PlayerState 확인
+	if (IsValid(OwnerPlayerState) == false)
+	{
+		return;
+	}
+
+	// Listen Server의 경우 SessionRoom에 참여한 전체 PlayerState의 Ready 상태 확인
+	if (OwnerPlayerState->HasAuthority() == true)
+	{
+		// Session Room에 참여한 전체 플레이어의 Ready 상태 검사
+		bool bAllPlayerIsReady = CheckAllPlayerIsReady();
+
+		// 참여한 전체 플레이어가 Ready 상태일 경우 게임 맵 로드
+		if (bAllPlayerIsReady == true)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, TEXT("# URESessionPlayerStateComponent - Need to open Game Map"));
+			GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, TEXT("# URESessionPlayerStateComponent - Need to open Game Map"));
+			GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, TEXT("# URESessionPlayerStateComponent - Need to open Game Map"));
+			return;
+		}
+	}
+	// Client의 경우 서버에 Ready 상태 변경 요청 전송
+	else
+	{
+		// 서버에게 플레이어의 Ready 상태 변경 요청
+		ServerRequestChangeReadyState(!bIsPlayerReady);
+	}
+}
+
+bool URESessionPlayerStateComponent::CheckAllPlayerIsReady()
+{
+	// World에 존재하는 모든 PlayerState 중에서 Session에 참여되어있는 모든 PlayerState 대상 검사
+	for (TActorIterator<APlayerState> It(GetWorld()); It; ++It)
+	{
+		// PlayerState의 유효성 검사
+		APlayerState* ClientState = *It;
+		if (IsValid(ClientState) == false)
+		{
+			continue;
+		}
+
+		// Session Room 참여 상태를 관리하는 Component 얻기
+		URESessionPlayerStateComponent* SessionComponent = ClientState->FindComponentByClass<URESessionPlayerStateComponent>();
+		if (IsValid(SessionComponent) == false || SessionComponent == this)
+		{
+			continue;
+		}
+
+		// 클라이언트가 현재 SessionRoom에 참여한 상태인지 확인
+		if (SessionComponent->bIsInSessionRoom == false)
+		{
+			continue;
+		}
+		
+		// SessionRoom에 참여중인 클라이언트의 Ready 상태 확인
+		if (SessionComponent->bIsPlayerReady == false)
 		{
 			return false;
 		}
@@ -129,45 +275,23 @@ bool URESessionPlayerStateComponent::CheckAllPlayerIsReady()
 	return true;
 }
 
-void URESessionPlayerStateComponent::OnReadyButtonClicked()
+void URESessionPlayerStateComponent::ServerRequestChangeReadyState_Implementation(bool bNewReadyState)
 {
-	// Server
-	if (GetOwnerRole() == ENetRole::ROLE_Authority)
+	// 서버에서만 실행되도록 확인
+	if (IsValid(OwnerPlayerState) == false || OwnerPlayerState->HasAuthority() == false)
 	{
-		// Session에 참가중인 전체 플레이어가 Ready 상태인지 확인
-		bool bIsReadytoStart = CheckAllPlayerIsReady();
-		if (bIsReadytoStart == false)
-		{
-			return;
-		}
-
-		// GameMap 로딩
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("#URESessionPlayerComponent - Need to Load Game Map"));
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("#URESessionPlayerComponent - Need to Load Game Map"));
-
-
 		return;
 	}
-
-	// Client
-	if (GetOwnerRole() == ENetRole::ROLE_AutonomousProxy || GetOwnerRole() == ENetRole::ROLE_SimulatedProxy)
-	{
-		// 서버에 Ready 상태 변경 요청
-		ServerRequestChangeReadyState();
-		return;
-	}
-}
-
-void URESessionPlayerStateComponent::ServerRequestChangeReadyState_Implementation()
-{
-	if (GetOwnerRole() != ENetRole::ROLE_Authority)
+	
+	// 변경하려는 값이 동일하면 함수 조기 종료
+	if (bIsPlayerReady == bNewReadyState)
 	{
 		return;
 	}
 
-	bIsPlayerReady = bIsPlayerReady == true ? false : true;
+	// 플레이어의 Ready 상태 변경
+	bIsPlayerReady = bNewReadyState;
 
-	// Listen 서버 환경을 고려하여 이벤트 실행
+	// Listen 서버 환경 고려 bIsPlayerReady 값 변경 이벤트 실행
 	OnRep_IsPlayerReady();
 }
-

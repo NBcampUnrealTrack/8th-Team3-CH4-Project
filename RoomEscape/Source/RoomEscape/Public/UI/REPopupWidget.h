@@ -47,6 +47,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	class URETextButtonBase* AddPopupButton(FText Text_Button);
 
+	UFUNCTION(BlueprintCallable)
+	void AddPopupButton_Cancel();
+
 protected:
 	// Popup UI의 HorizontalBox에 Spacer를 추가하는 함수
 	UFUNCTION(BlueprintCallable)
