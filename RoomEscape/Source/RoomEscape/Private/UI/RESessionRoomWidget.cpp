@@ -19,30 +19,12 @@ void URESessionRoomWidget::NativeConstruct()
 	}
 }
 
-void URESessionRoomWidget::InitializeWidgetByContextObject_Implementation(UObject* ContextObject)
-{
-}
-
-void URESessionRoomWidget::InitializeWidgetByComponent_Implementation(UActorComponent* Component)
-{
-	URESessionPlayerStateComponent* SessionRoomComponent = Cast<URESessionPlayerStateComponent>(Component);
-	if (IsValid(SessionRoomComponent) == false)
-	{
-		return;
-	}
-
-	SessionRoomComponent->OnReadyStateChanged.AddUniqueDynamic(this, &ThisClass::OnReadyStateChanged);
-}
-
-void URESessionRoomWidget::InitializeWidgetByActor_Implementation(AActor* Actor)
-{
-}
-
 void URESessionRoomWidget::AddJoinedPlayer(APlayerState* JoinedPlayerState)
 {
 	// Scroll Box 또는 PlayerState가 유효하지 않으면 함수 조기 종료
 	if (IsValid(ScrollBox_Players) == false || IsValid(JoinedPlayerState) == false)
 	{
+		GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Red, TEXT("No Layout"));
 		return;
 	}
 
@@ -50,6 +32,7 @@ void URESessionRoomWidget::AddJoinedPlayer(APlayerState* JoinedPlayerState)
 	URESessionPlayerStateComponent* SessionRoomComponent = JoinedPlayerState->FindComponentByClass<URESessionPlayerStateComponent>();
 	if (IsValid(SessionRoomComponent) == false)
 	{
+		GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Red, TEXT("No SessionRoomComponent"));
 		return;
 	}
 
@@ -59,6 +42,7 @@ void URESessionRoomWidget::AddJoinedPlayer(APlayerState* JoinedPlayerState)
 	// 참여한 플레이어를 대표하는 TextBlock이 존재하면 해당 TextBlock 업데이트
 	if (Map_PlayerTextBlock.Contains(PlayerID) == true)
 	{
+		GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Red, TEXT("Exsited Player"));
 		OnReadyStateChanged(JoinedPlayerState, SessionRoomComponent->IsPlayerReady());
 		return;
 	}
@@ -67,6 +51,7 @@ void URESessionRoomWidget::AddJoinedPlayer(APlayerState* JoinedPlayerState)
 	UTextBlock* TextBlock_Player = WidgetTree->ConstructWidget<UTextBlock>();
 	if (IsValid(TextBlock_Player) == false)
 	{
+		GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Red, TEXT("TextBlock_Player Construct Failed"));
 		return;
 	}
 
@@ -107,6 +92,29 @@ void URESessionRoomWidget::RemoveLeavePlayer(APlayerState* LeavePlayerState)
 	// 플레이어가 Session을 나갔음을 표시(Player 담당 TextBlock 제거)
 	TextBlock_Player->RemoveFromParent();
 	return;
+}
+
+void URESessionRoomWidget::OnExitButtonClicked()
+{
+	// Local Player의 PlayerState 얻기
+	APlayerState* LocalPlayerState = GetOwningPlayerState();
+	if (IsValid(LocalPlayerState) == false)
+	{
+		return;
+	}
+
+	// Local PlayerState의 SessionRoom 관리 Component 얻기
+	URESessionPlayerStateComponent* SessionRoomComponent = LocalPlayerState->FindComponentByClass<URESessionPlayerStateComponent>();
+	if (IsValid(SessionRoomComponent) == false)
+	{
+		return;
+	}
+
+	// SessionRoom에서 퇴장함을 알림
+	SessionRoomComponent->LeaveSessionRoom();
+
+	// SessionRoom Widget 비활성화
+	DeactivateWidget();
 }
 
 void URESessionRoomWidget::OnReadyStateChanged(APlayerState* InstigatorState, bool bNewIsPlayerReady)

@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "CommonActivatableWidget.h"
-#include "UI/InitializeUtilityInterface.h"
 #include "RESessionRoomWidget.generated.h"
 
 class UTextBlock;
@@ -16,20 +15,12 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSessionButtonClickedSignature);
  * 
  */
 UCLASS()
-class ROOMESCAPE_API URESessionRoomWidget : public UCommonActivatableWidget, public IInitializeUtilityInterface
+class ROOMESCAPE_API URESessionRoomWidget : public UCommonActivatableWidget
 {
 	GENERATED_BODY()
 
 public:
 	virtual void NativeConstruct() override;
-
-protected:
-	// IInitializeUtilityInterface을(를) 통해 상속됨
-	void InitializeWidgetByContextObject_Implementation(UObject* ContextObject) override;
-
-	void InitializeWidgetByComponent_Implementation(UActorComponent* Component) override;
-
-	void InitializeWidgetByActor_Implementation(AActor* Actor) override;
 
 public:
 	// ReadyButton을 
@@ -72,6 +63,9 @@ public:
 	void RemoveLeavePlayer(APlayerState* LeavePlayerState);
 
 protected:
+	UFUNCTION(BlueprintCallable)
+	void OnExitButtonClicked();
+
 	UFUNCTION(BlueprintCallable)
 	void OnReadyButtonClicked() { OnButtonClicked_Ready.Broadcast(); }
 

@@ -45,7 +45,7 @@ void URESessionPopupWidget::HostGameSession()
 	}
 
 	// 입력받은 Session 이름과 비밀번호를 사용하여 Game Host 시작
-	GameInstance->HostGame(SessionName, SessionPassword);
+	//GameInstance->HostGame(SessionName, SessionPassword);
 	DeactivateWidget();
 
 	// SessionRoom 참여 이벤트 실행
@@ -88,7 +88,7 @@ void URESessionPopupWidget::JoinGameSession()
 	}
 
 	// 입력받은 Session 이름과 비밀번호를 사용하여 Game Host 시작
-	GameInstance->JoinGame(SessionName, SessionPassword);
+	//GameInstance->JoinGame(SessionName, SessionPassword);
 	DeactivateWidget();
 
 	// SessionRoom 참여 이벤트 실행

@@ -79,6 +79,9 @@ protected:
 	void ClientBroadcastPlayerInSessionRoom(APlayerState* PlayerState, bool bIsJoin);
 
 	UFUNCTION()
+	void UpdateAllPlayersInSessionRoom();
+
+	UFUNCTION()
 	void OnReadyButtonClicked();
 
 	// (Client 호출) 서버에게 플레이어의 Ready 상태를 변경할 것을 요청하는 함수

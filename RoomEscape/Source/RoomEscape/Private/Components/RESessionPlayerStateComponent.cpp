@@ -92,6 +92,9 @@ void URESessionPlayerStateComponent::JoinSessionRoom()
 	// Session Room UI 생성
 	IWidgetInitializableInterface::Execute_InitWidget(this);
 
+	// 기존에 Session Room에 참여중인 플레이어 UI 등록
+	UpdateAllPlayersInSessionRoom();
+
 	// 서버에 플레이어가 Session Room에 참여하였음을 알림
 	ServerBroadcastPlayerInSessionRoom(true);
 }
@@ -99,7 +102,7 @@ void URESessionPlayerStateComponent::JoinSessionRoom()
 void URESessionPlayerStateComponent::LeaveSessionRoom()
 {
 	// 서버에 플레이어가 Session Room에 퇴장하였음을 알림
-	ServerBroadcastPlayerInSessionRoom(true);
+	ServerBroadcastPlayerInSessionRoom(false);
 
 	// Session Room UI 제거
 	if (IsValid(SessionRoomWidgetInstance) == true)
@@ -140,7 +143,7 @@ void URESessionPlayerStateComponent::ServerBroadcastPlayerInSessionRoom_Implemen
 		if (SessionComponent->bIsInSessionRoom == true)
 		{
 			// 클라이언트에게 자신(플레이어)의 SessionRoom에대한 상태가 변경되었음을 전파
-			ClientBroadcastPlayerInSessionRoom(OwnerPlayerState, bIsJoin);
+			SessionComponent->ClientBroadcastPlayerInSessionRoom(OwnerPlayerState, bIsJoin);
 		}
 	}
 }
@@ -159,6 +162,8 @@ void URESessionPlayerStateComponent::ClientBroadcastPlayerInSessionRoom_Implemen
 		return;
 	}
 
+	GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Green, *FString::Printf(TEXT("New Client joined in Session - %s"), *PlayerState->GetPlayerName()));
+
 	// 참여한 Player를 UI에 추가 또는 제거
 	if (bIsJoin == true)
 	{
@@ -172,6 +177,39 @@ void URESessionPlayerStateComponent::ClientBroadcastPlayerInSessionRoom_Implemen
 	}
 }
 
+void URESessionPlayerStateComponent::UpdateAllPlayersInSessionRoom()
+{
+	if (IsValid(SessionRoomWidgetInstance) == false)
+	{
+		return;
+	}
+
+	// World에 존재하는 모든 PlayerState 중에서 Session에 참여되어있는 모든 Client 검색
+	for (TActorIterator<APlayerState> It(GetWorld()); It; ++It)
+	{
+		// PlayerState의 유효성 검사
+		APlayerState* ClientState = *It;
+		if (IsValid(ClientState) == false)
+		{
+			continue;
+		}
+
+		// Session Room 참여 상태를 관리하는 Component 얻기
+		URESessionPlayerStateComponent* SessionComponent = ClientState->FindComponentByClass<URESessionPlayerStateComponent>();
+		if (IsValid(SessionComponent) == false)
+		{
+			continue;
+		}
+
+		// 클라이언트가 현재 SessionRoom에 참여한 상태인지 확인
+		if (SessionComponent->bIsInSessionRoom == true)
+		{
+			// 해당 플레이어가 현재 SessionRoom UI에 추가
+			SessionRoomWidgetInstance->AddJoinedPlayer(ClientState);
+		}
+	}
+}
+
 void URESessionPlayerStateComponent::OnReadyButtonClicked()
 {
 	// 컴포넌트를 소유한 PlayerState 확인
@@ -181,7 +219,7 @@ void URESessionPlayerStateComponent::OnReadyButtonClicked()
 	}
 
 	// Listen Server의 경우 SessionRoom에 참여한 전체 PlayerState의 Ready 상태 확인
-	if (OwnerPlayerState->HasAuthority() == false)
+	if (OwnerPlayerState->HasAuthority() == true)
 	{
 		// Session Room에 참여한 전체 플레이어의 Ready 상태 검사
 		bool bAllPlayerIsReady = CheckAllPlayerIsReady();
@@ -217,7 +255,7 @@ bool URESessionPlayerStateComponent::CheckAllPlayerIsReady()
 
 		// Session Room 참여 상태를 관리하는 Component 얻기
 		URESessionPlayerStateComponent* SessionComponent = ClientState->FindComponentByClass<URESessionPlayerStateComponent>();
-		if (IsValid(SessionComponent) == false)
+		if (IsValid(SessionComponent) == false || SessionComponent == this)
 		{
 			continue;
 		}
