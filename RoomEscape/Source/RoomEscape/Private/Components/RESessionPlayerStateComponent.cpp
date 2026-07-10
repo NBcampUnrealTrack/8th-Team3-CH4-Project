@@ -39,6 +39,17 @@ void URESessionPlayerStateComponent::GetLifetimeReplicatedProps(TArray<class FLi
 	DOREPLIFETIME(ThisClass, SpawnRoomType);
 }
 
+void URESessionPlayerStateComponent::OnComponentDestroyed(bool bDestroyingHierarchy)
+{
+	// Session Room Widget 비활성화
+	if (IsValid(SessionRoomWidgetInstance) == true)
+	{
+		SessionRoomWidgetInstance->DeactivateWidget();
+	}
+
+	Super::OnComponentDestroyed(bDestroyingHierarchy);
+}
+
 void URESessionPlayerStateComponent::InitWidget_Implementation()
 {
 	if (IsValid(OwnerPlayerState) == false)
@@ -236,9 +247,7 @@ void URESessionPlayerStateComponent::OnReadyButtonClicked()
 		// 참여한 전체 플레이어가 Ready 상태일 경우 게임 맵 로드
 		if (bAllPlayerIsReady == true)
 		{
-			GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, TEXT("# URESessionPlayerStateComponent - Need to open Game Map"));
-			GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, TEXT("# URESessionPlayerStateComponent - Need to open Game Map"));
-			GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, TEXT("# URESessionPlayerStateComponent - Need to open Game Map"));
+			//GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, TEXT("# URESessionPlayerStateComponent - Need to open Game Map"));
 			StartOpenGameMap(GameMap);
 			return;
 		}

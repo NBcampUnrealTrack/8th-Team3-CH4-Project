@@ -17,7 +17,11 @@ void URESessionRoomWidget::NativeConstruct()
 
 	if (IsValid(Button_Ready) == true)
 	{
-		Button_Ready->OnClicked.AddDynamic(this, &ThisClass::OnReadyButtonClicked);
+		Button_Ready->OnButtonClicked.AddUniqueDynamic(this, &ThisClass::OnReadyButtonClicked);
+	}
+	if (IsValid(Button_Exit) == true)
+	{
+		Button_Exit->OnButtonClicked.AddUniqueDynamic(this, &ThisClass::OnExitButtonClicked);
 	}
 }
 
@@ -38,7 +42,6 @@ void URESessionRoomWidget::AddJoinedPlayer(APlayerState* JoinedPlayerState)
 	// Vertical Box 또는 PlayerState가 유효하지 않으면 함수 조기 종료
 	if (IsValid(VerticalBox_RoomA) == false || IsValid(VerticalBox_RoomB) == false || IsValid(JoinedPlayerState) == false)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, TEXT("Invalid Layout or parameter"));
 		return;
 	}
 
@@ -46,7 +49,6 @@ void URESessionRoomWidget::AddJoinedPlayer(APlayerState* JoinedPlayerState)
 	URESessionPlayerStateComponent* SessionRoomComponent = JoinedPlayerState->FindComponentByClass<URESessionPlayerStateComponent>();
 	if (IsValid(SessionRoomComponent) == false)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, TEXT("Invalid component"));
 		return;
 	}
 
@@ -56,7 +58,6 @@ void URESessionRoomWidget::AddJoinedPlayer(APlayerState* JoinedPlayerState)
 	// 참여한 플레이어를 대표하는 TextBlock이 존재하면 해당 TextBlock 업데이트
 	if (Map_PlayerTextBlock.Contains(PlayerID) == true)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, TEXT("Existed Player"));
 		OnPlayerStateChanged(JoinedPlayerState);
 		return;
 	}
@@ -67,6 +68,9 @@ void URESessionRoomWidget::AddJoinedPlayer(APlayerState* JoinedPlayerState)
 	{
 		return;
 	}
+
+	// 텍스트 래핑 설정
+	TextBlock_Player->SetAutoWrapText(true);
 
 	// 표시될 Text 설정
 	FString DisplayString = JoinedPlayerState->GetPlayerName();
@@ -167,7 +171,6 @@ void URESessionRoomWidget::OnPlayerStateChanged(APlayerState* InstigatorState)
 	// 이벤트를 실행시킨 PlayerState의 유효성 검사
 	if (IsValid(InstigatorState) == false)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, TEXT("Invalid instigatorState"));
 		return;
 	}
 
@@ -175,7 +178,6 @@ void URESessionRoomWidget::OnPlayerStateChanged(APlayerState* InstigatorState)
 	URESessionPlayerStateComponent* SessionRoomComponent = InstigatorState->FindComponentByClass<URESessionPlayerStateComponent>();
 	if (IsValid(SessionRoomComponent) == false)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, TEXT("Invalid SessionRoomComponent"));
 		return;
 	}
 
@@ -183,7 +185,6 @@ void URESessionRoomWidget::OnPlayerStateChanged(APlayerState* InstigatorState)
 	// 플레이어의 Spawn Room Type이 유효한지 확인
 	if (SessionRoomComponent->IsPlayerInSession() == false || SessionRoomComponent->GetPlayerSpawnRoomType() == ERESpawnRoomType::None)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, TEXT("Not In sessionRoom or Invalid Roomtype"));
 		return;
 	}
 
@@ -197,7 +198,9 @@ void URESessionRoomWidget::OnPlayerStateChanged(APlayerState* InstigatorState)
 	if (IsValid(TextBlock_Player) == false)
 	{
 		TextBlock_Player = WidgetTree->ConstructWidget<UTextBlock>();
-		return;
+
+		// 텍스트 래핑 설정
+		TextBlock_Player->SetAutoWrapText(true);
 	}
 
 	// UI에 표시될 Text 설정

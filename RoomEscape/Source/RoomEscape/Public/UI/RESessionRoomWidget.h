@@ -30,7 +30,7 @@ public:
 	FOnSessionButtonClickedSignature OnButtonClicked_Ready;
 
 protected:
-#pragma region Session Room Info
+#pragma region Header
 
 	// Session 이름을 표시하는 TextBlock
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (BindWidget), Category = "Layout")
@@ -42,7 +42,7 @@ protected:
 
 #pragma endregion
 
-#pragma region Player Info
+#pragma region Room Area
 
 	// Room A에서 스폰될 플레이어가 표시되는 VerticalBox
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (BindWidget), Category = "Layout")
@@ -62,19 +62,19 @@ protected:
 
 #pragma endregion
 
-#pragma region Session Buttons
+#pragma region Footer
 
 	// Session에서 나가는(MainMenu로 복귀) Button
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (BindWidget), Category = "Layout")
-	TObjectPtr<UButton> Button_Back;
+	TObjectPtr<URETextButtonBase> Button_Exit;
 
 	// EOS와 연계되어 다른 사람을 초대하는 버튼
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (BindWidget), Category = "Layout")
-	TObjectPtr<UButton> Button_Invite;
+	TObjectPtr<URETextButtonBase> Button_Invite;
 
 	// Ready 또는 Start를 담당하는 Button
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (BindWidget), Category = "Layout")
-	TObjectPtr<UButton> Button_Ready;
+	TObjectPtr<URETextButtonBase> Button_Ready;
 
 #pragma endregion
 

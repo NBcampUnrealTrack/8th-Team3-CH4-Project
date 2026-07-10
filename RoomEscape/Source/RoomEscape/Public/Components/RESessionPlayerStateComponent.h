@@ -32,6 +32,8 @@ protected:
 
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 
+	virtual void OnComponentDestroyed(bool bDestroyingHierarchy) override;
+
 public:	
 	// IWidgetInitializableInterface을(를) 통해 상속됨
 	void InitWidget_Implementation() override;
@@ -63,7 +65,7 @@ protected:
 	ERESpawnRoomType SpawnRoomType = ERESpawnRoomType::None;
 
 	// 게임 시작 시 로드되는 맵
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Session Room|Travel")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Session Room")
 	TSoftObjectPtr<UWorld> GameMap;
 
 	// 생성된 Session Room UI의 Instance
