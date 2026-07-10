@@ -39,6 +39,14 @@ namespace RETag
 			UE_DEFINE_GAMEPLAY_TAG(Test, "Event.Debug.Test");
 			UE_DEFINE_GAMEPLAY_TAG(Piano, "Event.Debug.Piano");
 		}
+
+		namespace Progress
+		{
+			UE_DEFINE_GAMEPLAY_TAG(StageChanged, "Event.Progress.StageChanged");
+			UE_DEFINE_GAMEPLAY_TAG(BadEnding, "Event.Progress.BadEnding");
+			UE_DEFINE_GAMEPLAY_TAG(Restarted, "Event.Progress.Restarted");
+			UE_DEFINE_GAMEPLAY_TAG(Cleared, "Event.Progress.Cleared");
+		}
 	}
 
 	namespace State

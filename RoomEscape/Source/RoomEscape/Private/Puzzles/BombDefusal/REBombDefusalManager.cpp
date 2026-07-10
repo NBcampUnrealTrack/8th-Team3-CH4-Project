@@ -36,6 +36,16 @@ void AREBombDefusalManager::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	DOREPLIFETIME(ThisClass, RemainingTimeSeconds);
 }
 
+void AREBombDefusalManager::SetBadEndingFlowDelegated(bool bDelegated)
+{
+	if (HasAuthority() == false)
+	{
+		return;
+	}
+
+	bBadEndingFlowDelegated = bDelegated;
+}
+
 void AREBombDefusalManager::SetPatternData(UREBombPatternData* InPatternData)
 {
 	if (HasAuthority() == false)
@@ -262,6 +272,14 @@ void AREBombDefusalManager::StartActiveRound()
 	GetWorldTimerManager().ClearTimer(BadEndingResetTimerHandle);
 	ResetRuntimeState(true);
 	StartTimer();
+
+	// 위임 모드에서 진행 매니저가 재활성화한 경우: 내부 ResolveBadEnding이 돌지 않았으므로 여기서 리셋/페이드인 알림을 보낸다.
+	if (bPendingCheckpointRestoreNotify == true)
+	{
+		bPendingCheckpointRestoreNotify = false;
+		MulticastBombRuntimeReset();
+		MulticastBombCheckpointRestored();
+	}
 }
 
 void AREBombDefusalManager::ResetRuntimeState(bool bResetDeviceState)
@@ -407,6 +425,14 @@ void AREBombDefusalManager::FailBomb(AActor* SourceActor, AActor* Interactor, co
 	MulticastBombExploded(SourceActor, FailureFeedbackMessage);
 
 	GetWorldTimerManager().ClearTimer(BadEndingResetTimerHandle);
+
+	// 위임 모드: 텔레포트·리셋·재시작은 진행 매니저(OnPuzzleFailed 구독자)가 수행. 여기서는 재활성화 시 보낼 페이드인 알림만 예약.
+	if (bBadEndingFlowDelegated == true)
+	{
+		bPendingCheckpointRestoreNotify = true;
+		return;
+	}
+
 	GetWorldTimerManager().SetTimer(BadEndingResetTimerHandle, this, &AREBombDefusalManager::ResolveBadEnding, GetBadEndingResetDelaySeconds(), false);
 }
 

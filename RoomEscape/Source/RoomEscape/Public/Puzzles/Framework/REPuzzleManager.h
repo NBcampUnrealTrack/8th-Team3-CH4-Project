@@ -35,11 +35,12 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Puzzle", meta = (AllowPrivateAccess = "true"))
 	bool bStartActive = true;
 
+	// 7/10 회의 결정: 진행도는 런타임 유지만 사용, SaveGame 영구 저장은 기본 비활성 (이어하기 채택 시 인스턴스에서 켜기)
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Puzzle|Progress", meta = (AllowPrivateAccess = "true"))
-	bool bSaveSolvedState = true;
+	bool bSaveSolvedState = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Puzzle|Progress", meta = (AllowPrivateAccess = "true"))
-	bool bAutoRestoreSavedSolvedState = true;
+	bool bAutoRestoreSavedSolvedState = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Puzzle|Progress", meta = (AllowPrivateAccess = "true"))
 	FName ProgressId = NAME_None;

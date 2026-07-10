@@ -108,6 +108,10 @@ protected:
 	FTimerHandle BadEndingResetTimerHandle;
 	FTimerHandle BadEndingFadeWidgetCleanupTimerHandle;
 
+	// 서버 전용. 배드엔딩 위임 시 진행 매니저가 재활성화(StartActiveRound)할 때 페이드인/리셋 알림을 이어 보내기 위한 플래그.
+	bool bBadEndingFlowDelegated = false;
+	bool bPendingCheckpointRestoreNotify = false;
+
 public:
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Bomb Defusal")
 	void SetPatternData(UREBombPatternData* InPatternData);
@@ -142,6 +146,11 @@ public:
 
 	bool SubmitWireCut(AREBombWire* Wire, AActor* Interactor);
 	bool SubmitButtonToggle(AREBombButton* Button, AActor* Interactor);
+
+	// 진행 매니저가 배드엔딩(텔레포트·리셋·재시작)을 대신 처리할 때 호출.
+	// 위임되면 실패 시 내부 ResolveBadEnding 타이머를 걸지 않고 폭발 연출만 남긴다. (독립 테스트 레벨은 미위임 = 기존 자체 흐름)
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Bomb Defusal|Bad Ending")
+	void SetBadEndingFlowDelegated(bool bDelegated);
 
 protected:
 	virtual bool CanActivatePuzzle() const override;
