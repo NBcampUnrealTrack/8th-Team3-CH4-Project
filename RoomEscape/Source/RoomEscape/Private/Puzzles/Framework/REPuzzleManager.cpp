@@ -1,5 +1,7 @@
 #include "Puzzles/Framework/REPuzzleManager.h"
+#include "Engine/GameInstance.h"
 #include "Net/UnrealNetwork.h"
+#include "Save/RELocalSaveSubsystem.h"
 
 AREPuzzleManager::AREPuzzleManager()
 {
@@ -15,9 +17,17 @@ void AREPuzzleManager::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (HasAuthority() == true && bStartActive == true && State == EREPuzzleState::Locked)
+	if (HasAuthority() == true)
 	{
-		ActivatePuzzle();
+		if (TryRestoreSavedSolvedState() == true)
+		{
+			return;
+		}
+
+		if (bStartActive == true && State == EREPuzzleState::Locked)
+		{
+			ActivatePuzzle();
+		}
 	}
 }
 
@@ -64,6 +74,16 @@ void AREPuzzleManager::ResetToLocked()
 EREPuzzleState AREPuzzleManager::GetPuzzleState() const
 {
 	return State;
+}
+
+FName AREPuzzleManager::GetProgressId() const
+{
+	return ResolveProgressId();
+}
+
+bool AREPuzzleManager::ShouldSaveSolvedState() const
+{
+	return bSaveSolvedState == true && ResolveProgressId().IsNone() == false;
 }
 
 bool AREPuzzleManager::IsLocked() const
@@ -113,6 +133,12 @@ void AREPuzzleManager::HandlePuzzleFailed()
 {
 }
 
+void AREPuzzleManager::HandleSavedSolvedStateRestored()
+{
+	HandlePuzzleSolved();
+	OnPuzzleSolved.Broadcast();
+}
+
 void AREPuzzleManager::SetPuzzleState(EREPuzzleState NewState)
 {
 	if (State == NewState)
@@ -133,6 +159,7 @@ void AREPuzzleManager::MarkSolved()
 
 	SetPuzzleState(EREPuzzleState::Solved);
 	HandlePuzzleSolved();
+	SaveSolvedProgress();
 	OnPuzzleSolved.Broadcast();
 }
 
@@ -146,4 +173,58 @@ void AREPuzzleManager::MarkFailed()
 	SetPuzzleState(EREPuzzleState::Failed);
 	HandlePuzzleFailed();
 	OnPuzzleFailed.Broadcast();
+}
+
+FName AREPuzzleManager::ResolveProgressId() const
+{
+	return ProgressId.IsNone() == false ? ProgressId : GetFName();
+}
+
+bool AREPuzzleManager::TryRestoreSavedSolvedState()
+{
+	if (HasAuthority() == false || bAutoRestoreSavedSolvedState == false || bSaveSolvedState == false || IsSolved() == true)
+	{
+		return false;
+	}
+
+	const FName ResolvedProgressId = ResolveProgressId();
+	if (ResolvedProgressId.IsNone() == true)
+	{
+		return false;
+	}
+
+	UGameInstance* GameInstance = GetGameInstance();
+	if (IsValid(GameInstance) == false)
+	{
+		return false;
+	}
+
+	URELocalSaveSubsystem* SaveSubsystem = GameInstance->GetSubsystem<URELocalSaveSubsystem>();
+	if (IsValid(SaveSubsystem) == false || SaveSubsystem->IsPuzzleSolved(ResolvedProgressId) == false)
+	{
+		return false;
+	}
+
+	SetPuzzleState(EREPuzzleState::Solved);
+	HandleSavedSolvedStateRestored();
+	return true;
+}
+
+void AREPuzzleManager::SaveSolvedProgress() const
+{
+	if (HasAuthority() == false || ShouldSaveSolvedState() == false)
+	{
+		return;
+	}
+
+	UGameInstance* GameInstance = GetGameInstance();
+	if (IsValid(GameInstance) == false)
+	{
+		return;
+	}
+
+	if (URELocalSaveSubsystem* SaveSubsystem = GameInstance->GetSubsystem<URELocalSaveSubsystem>())
+	{
+		SaveSubsystem->MarkPuzzleSolved(ResolveProgressId(), true);
+	}
 }

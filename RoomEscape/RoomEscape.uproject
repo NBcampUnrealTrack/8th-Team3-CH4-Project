@@ -13,7 +13,8 @@
 				"UMG",
 				"CommonUI",
 				"GameplayAbilities",
-				"CoreUObject"
+				"CoreUObject",
+				"DeveloperSettings"
 			]
 		},
 		{

@@ -21,7 +21,22 @@ void AREPuzzleActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 
 void AREPuzzleActor::SetPuzzleManager(AREPuzzleManager* InPuzzleManager)
 {
+	if (PuzzleManager == InPuzzleManager)
+	{
+		return;
+	}
+
 	PuzzleManager = InPuzzleManager;
+	HandlePuzzleManagerChanged();
+}
+
+void AREPuzzleActor::OnRep_PuzzleManager()
+{
+	HandlePuzzleManagerChanged();
+}
+
+void AREPuzzleActor::HandlePuzzleManagerChanged()
+{
 }
 
 AREPuzzleManager* AREPuzzleActor::GetPuzzleManager() const
