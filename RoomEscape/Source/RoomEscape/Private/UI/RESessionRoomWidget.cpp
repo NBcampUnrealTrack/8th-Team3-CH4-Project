@@ -3,9 +3,11 @@
 
 #include "UI/RESessionRoomWidget.h"
 #include "Blueprint/WidgetTree.h"
+#include "Components/VerticalBox.h"
 #include "Components/ScrollBox.h"
 #include "Components/TextBlock.h"
 #include "Components/Button.h"
+#include "UI/RETextButtonBase.h"
 #include "GameFramework/PlayerState.h"
 #include "Components/RESessionPlayerStateComponent.h"
 
@@ -15,16 +17,31 @@ void URESessionRoomWidget::NativeConstruct()
 
 	if (IsValid(Button_Ready) == true)
 	{
-		Button_Ready->OnClicked.AddDynamic(this, &ThisClass::OnReadyButtonClicked);
+		Button_Ready->OnButtonClicked.AddUniqueDynamic(this, &ThisClass::OnReadyButtonClicked);
+	}
+	if (IsValid(Button_Exit) == true)
+	{
+		Button_Exit->OnButtonClicked.AddUniqueDynamic(this, &ThisClass::OnExitButtonClicked);
+	}
+}
+
+void URESessionRoomWidget::SetSessionNameAndPassword(FText SessionName, FText SessionPassword)
+{
+	if (IsValid(TextBlock_SessionName) == true)
+	{
+		TextBlock_SessionName->SetText(SessionName);
+	}
+	if (IsValid(TextBlock_SessionPassword) == true)
+	{
+		TextBlock_SessionPassword->SetText(SessionPassword);
 	}
 }
 
 void URESessionRoomWidget::AddJoinedPlayer(APlayerState* JoinedPlayerState)
 {
-	// Scroll Box 또는 PlayerState가 유효하지 않으면 함수 조기 종료
-	if (IsValid(ScrollBox_Players) == false || IsValid(JoinedPlayerState) == false)
+	// Vertical Box 또는 PlayerState가 유효하지 않으면 함수 조기 종료
+	if (IsValid(VerticalBox_RoomA) == false || IsValid(VerticalBox_RoomB) == false || IsValid(JoinedPlayerState) == false)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Red, TEXT("No Layout"));
 		return;
 	}
 
@@ -32,7 +49,6 @@ void URESessionRoomWidget::AddJoinedPlayer(APlayerState* JoinedPlayerState)
 	URESessionPlayerStateComponent* SessionRoomComponent = JoinedPlayerState->FindComponentByClass<URESessionPlayerStateComponent>();
 	if (IsValid(SessionRoomComponent) == false)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Red, TEXT("No SessionRoomComponent"));
 		return;
 	}
 
@@ -42,8 +58,7 @@ void URESessionRoomWidget::AddJoinedPlayer(APlayerState* JoinedPlayerState)
 	// 참여한 플레이어를 대표하는 TextBlock이 존재하면 해당 TextBlock 업데이트
 	if (Map_PlayerTextBlock.Contains(PlayerID) == true)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Red, TEXT("Exsited Player"));
-		OnReadyStateChanged(JoinedPlayerState, SessionRoomComponent->IsPlayerReady());
+		OnPlayerStateChanged(JoinedPlayerState);
 		return;
 	}
 
@@ -51,9 +66,11 @@ void URESessionRoomWidget::AddJoinedPlayer(APlayerState* JoinedPlayerState)
 	UTextBlock* TextBlock_Player = WidgetTree->ConstructWidget<UTextBlock>();
 	if (IsValid(TextBlock_Player) == false)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Red, TEXT("TextBlock_Player Construct Failed"));
 		return;
 	}
+
+	// 텍스트 래핑 설정
+	TextBlock_Player->SetAutoWrapText(true);
 
 	// 표시될 Text 설정
 	FString DisplayString = JoinedPlayerState->GetPlayerName();
@@ -66,14 +83,27 @@ void URESessionRoomWidget::AddJoinedPlayer(APlayerState* JoinedPlayerState)
 	// TextBlock의 Text 업데이트
 	TextBlock_Player->SetText(FText::FromString(DisplayString));
 
-	// ScrollBox에 플레이어 담당 TextBlock 추가
-	ScrollBox_Players->AddChild(TextBlock_Player);
+	// 플레이어의 SpawnRoopType에 따라 UI 위치 설정
+	if (SessionRoomComponent->GetPlayerSpawnRoomType() == ERESpawnRoomType::Alpha)
+	{
+		if (VerticalBox_RoomA->HasChild(TextBlock_Player) == false)
+		{
+			VerticalBox_RoomA->AddChildToVerticalBox(TextBlock_Player);
+		}
+	}
+	if (SessionRoomComponent->GetPlayerSpawnRoomType() == ERESpawnRoomType::Beta)
+	{
+		if (VerticalBox_RoomB->HasChild(TextBlock_Player) == false)
+		{
+			VerticalBox_RoomB->AddChildToVerticalBox(TextBlock_Player);
+		}
+	}
 
 	// 플레이어를 담당하는 TextBlock의 Instance 저장
 	Map_PlayerTextBlock.Add(PlayerID, TextBlock_Player);
 
-	// 플레이어의 Ready 상태 변경에 대한 이벤트 연결
-	SessionRoomComponent->OnReadyStateChanged.AddUniqueDynamic(this, &ThisClass::OnReadyStateChanged);
+	// 플레이어의 상태 변경에 대한 이벤트 연결
+	SessionRoomComponent->OnSessionPlayerStateChanged.AddUniqueDynamic(this, &ThisClass::OnPlayerStateChanged);
 }
 
 void URESessionRoomWidget::RemoveLeavePlayer(APlayerState* LeavePlayerState)
@@ -117,29 +147,87 @@ void URESessionRoomWidget::OnExitButtonClicked()
 	DeactivateWidget();
 }
 
-void URESessionRoomWidget::OnReadyStateChanged(APlayerState* InstigatorState, bool bNewIsPlayerReady)
+void URESessionRoomWidget::ChangePlayerSpawnRoomType(ERESpawnRoomType TargetRoomType)
 {
+	APlayerState* LocalPlayerState = GetOwningPlayerState();
+	if (IsValid(LocalPlayerState) == false)
+	{
+		return;
+	}
+
+	// SessionRoom 관리 Component 얻기
+	URESessionPlayerStateComponent* SessionRoomComponent = LocalPlayerState->FindComponentByClass<URESessionPlayerStateComponent>();
+	if (IsValid(SessionRoomComponent) == false)
+	{
+		return;
+	}
+
+	// Spawn Room Type 변경 함수 실행
+	SessionRoomComponent->ChangeSpawnRoomType(TargetRoomType);
+}
+
+void URESessionRoomWidget::OnPlayerStateChanged(APlayerState* InstigatorState)
+{
+	// 이벤트를 실행시킨 PlayerState의 유효성 검사
 	if (IsValid(InstigatorState) == false)
 	{
 		return;
 	}
 
-	int32 PlayerID = InstigatorState->GetPlayerId();
-	if (Map_PlayerTextBlock.Contains(PlayerID) == false)
+	// SessionRoom 관리 Component 얻기
+	URESessionPlayerStateComponent* SessionRoomComponent = InstigatorState->FindComponentByClass<URESessionPlayerStateComponent>();
+	if (IsValid(SessionRoomComponent) == false)
 	{
 		return;
 	}
 
-	UTextBlock* TextBlock_Player = Map_PlayerTextBlock[PlayerID];
+	// 플레이어가 Session Room에 참여한 상태인지 확인
+	// 플레이어의 Spawn Room Type이 유효한지 확인
+	if (SessionRoomComponent->IsPlayerInSession() == false || SessionRoomComponent->GetPlayerSpawnRoomType() == ERESpawnRoomType::None)
+	{
+		return;
+	}
+
+	// 플레이어를 대표하는 ID(Index) 번호 얻기
+	int32 PlayerID = InstigatorState->GetPlayerId();
+
+	// 해당 플레이어에 대한 상태를 나타내는 TextBlock 찾기
+	UTextBlock* TextBlock_Player = Map_PlayerTextBlock.FindRef(PlayerID, nullptr);
+
+	// 검색된 TextBlock이 유효하지 않으면 새로 생성
 	if (IsValid(TextBlock_Player) == false)
 	{
-		return;
+		TextBlock_Player = WidgetTree->ConstructWidget<UTextBlock>();
+
+		// 텍스트 래핑 설정
+		TextBlock_Player->SetAutoWrapText(true);
 	}
 
+	// UI에 표시될 Text 설정
 	FString DisplayString = InstigatorState->GetPlayerName();
-	if (bNewIsPlayerReady == true)
+	if (SessionRoomComponent->IsPlayerReady() == true)
 	{
 		DisplayString.Append(TEXT("  (Ready)"));
 	}
 	TextBlock_Player->SetText(FText::FromString(DisplayString));
+
+	// 플레이어의 SpawnRoopType에 따라 UI 위치 설정
+	if (SessionRoomComponent->GetPlayerSpawnRoomType() == ERESpawnRoomType::Alpha)
+	{
+		if (VerticalBox_RoomA->HasChild(TextBlock_Player) == false)
+		{
+			VerticalBox_RoomA->AddChildToVerticalBox(TextBlock_Player);
+		}
+		return;
+	}
+	if (SessionRoomComponent->GetPlayerSpawnRoomType() == ERESpawnRoomType::Beta)
+	{
+		if (VerticalBox_RoomB->HasChild(TextBlock_Player) == false)
+		{
+			VerticalBox_RoomB->AddChildToVerticalBox(TextBlock_Player);
+		}
+		return;
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("URESessionPlayerStateComponent::SpawnRoomType is Invalid Value!"));
 }
