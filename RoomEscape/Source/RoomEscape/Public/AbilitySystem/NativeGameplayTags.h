@@ -35,11 +35,6 @@ namespace RETag
 		{
 			UE_DECLARE_GAMEPLAY_TAG_EXTERN(AlmostOver);
 		}
-		
-		namespace Item
-		{
-			UE_DECLARE_GAMEPLAY_TAG_EXTERN(PickedUp);
-		}
 
 		// 아직 구현 전인 시스템의 이벤트도 태그만 미리 등록
 		namespace Puzzle
