@@ -24,6 +24,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Network")
 	void JoinGame(FString InputRoomName, FString InputPassword);
 	
+	UFUNCTION(BlueprintCallable, Category = "Network")
+	void LeaveGame();
+	
 	UPROPERTY(BlueprintAssignable, Category = "Network")
 	FOnJoinProcessResult OnJoinProcessResult;
 	
@@ -47,4 +50,5 @@ protected:
 	void OnCreateSessionComplete(FName SessionName, bool bWasSuccessful);
 	void OnFindSessionsComplete(bool bWasSuccessful);
 	void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result);
+	void OnDestroySessionComplete(FName SessionName, bool bWasSuccessful);
 };
