@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "CommonActivatableWidget.h"
-#include "VisualEffectBaseWidget.generated.h"
+#include "REVisualEffectBaseWidget.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnWidgetFadeInOutSignature);
 
@@ -12,7 +12,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnWidgetFadeInOutSignature);
  * 
  */
 UCLASS()
-class ROOMESCAPE_API UVisualEffectBaseWidget : public UCommonActivatableWidget
+class ROOMESCAPE_API UREVisualEffectBaseWidget : public UCommonActivatableWidget
 {
 	GENERATED_BODY()
 
@@ -45,9 +45,23 @@ protected:
 	FWidgetAnimationDynamicEvent FadeOutAnimationFinishedDelegate;
 
 public:
-	UFUNCTION()
-	void HandleFadeInAnimationFinished();
+	// FadeIn Animation을 재생하는 함수
+	UFUNCTION(BlueprintCallable)
+	void FadeInWidget();
 
+	// FadeOut Animation을 재생하는 함수
+	// 재생 완료 시 Widget Deactivate 처리됨
+	UFUNCTION(BlueprintCallable)
+	void FadeOutWidget();
+
+protected:
+	// FadeIn Animation 재생 완료 시 호출되는 함수
+	// OnWidgetFadeIn 이벤트 실행을 담당
 	UFUNCTION()
-	void HandleFadeOutAnimationFinished();
+	virtual void HandleFadeInAnimationFinished();
+
+	// FadeOut Animation 재생 완료 시 호출되는 함수
+	// OnWidgetFadeOut 이벤트 실행 및 Widget Deactivate 처리를 담당
+	UFUNCTION()
+	virtual void HandleFadeOutAnimationFinished();
 };

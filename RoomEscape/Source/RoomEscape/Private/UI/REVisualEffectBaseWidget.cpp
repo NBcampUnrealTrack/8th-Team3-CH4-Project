@@ -1,10 +1,10 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "UI/VisualEffectBaseWidget.h"
+#include "UI/REVisualEffectBaseWidget.h"
 #include "Animation/WidgetAnimation.h"
 
-void UVisualEffectBaseWidget::NativeConstruct()
+void UREVisualEffectBaseWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
@@ -21,19 +21,35 @@ void UVisualEffectBaseWidget::NativeConstruct()
 	}
 }
 
-void UVisualEffectBaseWidget::NativeOnActivated()
+void UREVisualEffectBaseWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
 
 	PlayAnimation(FadeInAnimation);
 }
 
-void UVisualEffectBaseWidget::HandleFadeInAnimationFinished()
+void UREVisualEffectBaseWidget::FadeInWidget()
+{
+	if (IsValid(FadeInAnimation) == true)
+	{
+		PlayAnimation(FadeInAnimation);
+	}
+}
+
+void UREVisualEffectBaseWidget::FadeOutWidget()
+{
+	if (IsValid(FadeOutAnimation) == true)
+	{
+		PlayAnimation(FadeOutAnimation);
+	}
+}
+
+void UREVisualEffectBaseWidget::HandleFadeInAnimationFinished()
 {
 	OnWidgetFadeIn.Broadcast();
 }
 
-void UVisualEffectBaseWidget::HandleFadeOutAnimationFinished()
+void UREVisualEffectBaseWidget::HandleFadeOutAnimationFinished()
 {
 	OnWidgetFadeOut.Broadcast();
 
