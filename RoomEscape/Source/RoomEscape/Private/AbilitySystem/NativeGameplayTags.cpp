@@ -27,6 +27,11 @@ namespace RETag
 			UE_DEFINE_GAMEPLAY_TAG(AlmostOver, "Event.Timer.AlmostOver");
 		}
 
+		namespace Item
+		{
+			UE_DEFINE_GAMEPLAY_TAG(PickedUp, "Event.Item.PickedUp");
+		}
+
 		namespace Puzzle
 		{
 			UE_DEFINE_GAMEPLAY_TAG(Solved, "Event.Puzzle.Solved");
