@@ -17,11 +17,13 @@ void URESessionRoomWidget::NativeConstruct()
 
 	if (IsValid(Button_Ready) == true)
 	{
-		Button_Ready->OnButtonClicked.AddUniqueDynamic(this, &ThisClass::OnReadyButtonClicked);
+		Button_Ready->OnClicked().RemoveAll(this);
+		Button_Ready->OnClicked().AddUObject(this, &ThisClass::OnReadyButtonClicked);
 	}
 	if (IsValid(Button_Exit) == true)
 	{
-		Button_Exit->OnButtonClicked.AddUniqueDynamic(this, &ThisClass::OnExitButtonClicked);
+		Button_Exit->OnClicked().RemoveAll(this);
+		Button_Exit->OnClicked().AddUObject(this, &ThisClass::OnExitButtonClicked);
 	}
 }
 

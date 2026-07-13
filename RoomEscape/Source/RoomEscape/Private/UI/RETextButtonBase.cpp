@@ -13,12 +13,6 @@ void URETextButtonBase::NativePreConstruct()
 	}
 }
 
-void URETextButtonBase::NativeOnClicked()
-{
-	Super::NativeOnClicked();
-	OnButtonClicked.Broadcast();
-}
-
 void URETextButtonBase::SetButtonText(const FText& NewButtonText)
 {
 	if (IsValid(TextBlock_ButtonText) == true)

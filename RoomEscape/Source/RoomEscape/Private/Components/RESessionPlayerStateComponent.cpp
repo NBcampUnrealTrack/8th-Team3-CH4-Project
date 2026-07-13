@@ -247,7 +247,7 @@ void URESessionPlayerStateComponent::OnReadyButtonClicked()
 		// 참여한 전체 플레이어가 Ready 상태일 경우 게임 맵 로드
 		if (bAllPlayerIsReady == true)
 		{
-			//GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, TEXT("# URESessionPlayerStateComponent - Need to open Game Map"));
+			GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, TEXT("# URESessionPlayerStateComponent - Load Game Map !"));
 			StartOpenGameMap(GameMap);
 			return;
 		}
@@ -392,11 +392,16 @@ bool URESessionPlayerStateComponent::StartOpenGameMap(TSoftObjectPtr<UWorld> Map
 		return false;
 	}
 
+	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Green, TEXT("Loading Game Map..."));
+
 	// 중복 이동 요청 방지 플래그를 설정합니다.
 	bIsTravelRequested = true;
 
-	// Client에서 Map Load를 위하여 문자열 추가
-	GameMapPackageName = GameMapPackageName.Append(TEXT("?listen"));
+	if (GetNetMode() == ENetMode::NM_ListenServer)
+	{
+		// Listen 서버의 경우 Client에서 Map Load를 위하여 문자열 추가
+		GameMapPackageName = GameMapPackageName.Append(TEXT("?listen"));
+	}
 
 	// 선택한 맵으로 ServerTravel을 실행합니다.
 	bool bTravelStarted = World->ServerTravel(GameMapPackageName, false);
