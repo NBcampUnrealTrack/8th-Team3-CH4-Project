@@ -14,6 +14,8 @@ class UREGameplayAbility;
 class UCameraComponent;
 class USkeletalMeshComponent;
 class UAbilitySystemComponent;
+class UREInventoryComponent;
+class UCommonActivatableWidget;
 
 UCLASS()
 class ROOMESCAPE_API AREPlayerCharacter : public ACharacter, public IAbilitySystemInterface
@@ -37,6 +39,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void PawnClientRestart() override;
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void PossessedBy(AController* NewController) override;
@@ -49,6 +52,7 @@ protected:
 	void Input_JumpStarted();
 	void Input_JumpCompleted();
 	void Input_Flashlight();
+	void Input_ToggleInventory();
 
 	UFUNCTION()
 	void OnRep_FlashlightOn();
@@ -73,6 +77,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category="Input")
 	TObjectPtr<UInputAction> FlashlightAction;
+
+	UPROPERTY(EditDefaultsOnly, Category="Input")
+	TObjectPtr<UInputAction> ToggleInventoryAction;
 
 	UPROPERTY(EditDefaultsOnly, Category="Input|Jump")
 	bool bRegisterJumpMappingAtRuntime = true;
@@ -110,6 +117,13 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category="Ability")
 	TArray<TSubclassOf<UREGameplayAbility>> DefaultAbilities;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Inventory")
+	TObjectPtr<UREInventoryComponent> InventoryComponent;
+
+	// HUD Widget 클래스 (WBP_HUD, CommonActivatableWidget 기반)
+	UPROPERTY(EditDefaultsOnly, Category="UI")
+	TSubclassOf<UCommonActivatableWidget> HUDWidgetClass;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Flashlight")
 	TObjectPtr<USpotLightComponent> FlashlightComponent;
 
@@ -123,5 +137,6 @@ private:
 	void RegisterJumpMappingContext();
 	void UnregisterJumpMappingContext();
 	UInputAction* GetJumpInputAction() const;
+	void PushHUDWidget();
 	void ApplyFlashlightVisual();
 };

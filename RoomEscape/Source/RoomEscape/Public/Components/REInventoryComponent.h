@@ -9,6 +9,8 @@
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FInventoryChangedSignature, const int32&, Index, const FPrimaryAssetId&, NewDataAssetID);
 
+class UCommonActivatableWidget;
+
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class ROOMESCAPE_API UREInventoryComponent : public UActorComponent, public IWidgetInitializableInterface
 {
@@ -34,9 +36,9 @@ public:
     FInventoryChangedSignature OnInventoryChanged;
 
 protected:
-    // 인벤토리 Widget 클래스
+    // 인벤토리 Widget 클래스 (RootCanvas의 OverlayLayer에 Push되므로 ActivatableWidget 기반)
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-    TSubclassOf<UUserWidget> InventoryWidgetClass;
+    TSubclassOf<UCommonActivatableWidget> InventoryWidgetClass;
 
     // 인벤토리 크기
     // { RowCount, ColumnCount }

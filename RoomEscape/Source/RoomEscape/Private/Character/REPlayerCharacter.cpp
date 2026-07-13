@@ -17,6 +17,11 @@
 #include "Interaction/REInteractable.h"
 #include "Net/UnrealNetwork.h"
 #include "Puzzles/Framework/REPuzzleInteractableActor.h"
+#include "Components/REInventoryComponent.h"
+#include "Game/RENotifySubsystem.h"
+#include "UI/LocalWidgetManager.h"
+#include "UI/RERootCanvasWidget.h"
+#include "Widgets/CommonActivatableWidgetContainer.h"
 
 AREPlayerCharacter::AREPlayerCharacter()
 {
@@ -57,6 +62,8 @@ AREPlayerCharacter::AREPlayerCharacter()
 		NativeJumpAction->ValueType = EInputActionValueType::Boolean;
 	}
 
+	InventoryComponent = CreateDefaultSubobject<UREInventoryComponent>(TEXT("InventoryComponent"));
+
 	AbilitySystemComp = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComp"));
 	AbilitySystemComp->SetIsReplicated(true);
 	AbilitySystemComp->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
@@ -66,6 +73,65 @@ void AREPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	ApplyJumpMovementSettings();
+}
+
+void AREPlayerCharacter::PawnClientRestart()
+{
+	Super::PawnClientRestart();
+
+	// 로컬 플레이어에서만 호출되지만 방어적으로 확인
+	if (IsLocallyControlled() == false)
+	{
+		return;
+	}
+
+	PushHUDWidget();
+
+	// 인벤토리 Widget 초기화 - BeginPlay 시점에는 클라이언트의 Owner 복제가
+	// 완료되지 않을 수 있으므로 로컬 컨트롤러가 보장되는 이 시점에 호출
+	if (IsValid(InventoryComponent) == true)
+	{
+		IWidgetInitializableInterface::Execute_InitWidget(InventoryComponent);
+	}
+}
+
+void AREPlayerCharacter::PushHUDWidget()
+{
+	if (IsValid(HUDWidgetClass) == false)
+	{
+		return;
+	}
+
+	ULocalWidgetManager* WidgetManager = ULocalWidgetManager::GetInstance(this);
+	if (IsValid(WidgetManager) == false)
+	{
+		return;
+	}
+
+	// 리스폰/재접속 시 중복 Push 방지
+	if (IsValid(WidgetManager->FindWidget(FName("HUD"))) == true)
+	{
+		return;
+	}
+
+	URERootCanvasWidget* RootCanvasWidget = Cast<URERootCanvasWidget>(WidgetManager->GetRootWidget());
+	if (IsValid(RootCanvasWidget) == false)
+	{
+		return;
+	}
+
+	UCommonActivatableWidgetStack* PrimaryLayer = RootCanvasWidget->GetPrimaryWidgetStack();
+	if (IsValid(PrimaryLayer) == false)
+	{
+		return;
+	}
+
+	UCommonActivatableWidget* HUDInstance = PrimaryLayer->AddWidget<UCommonActivatableWidget>(HUDWidgetClass);
+	if (IsValid(HUDInstance) == true)
+	{
+		// 다른 컴포넌트(Timer, Chatting 등)가 RequestAsync("HUD")로 접근할 수 있도록 등록
+		WidgetManager->AddWidgetInstance(FName("HUD"), HUDInstance);
+	}
 }
 
 UAbilitySystemComponent* AREPlayerCharacter::GetAbilitySystemComponent() const
@@ -179,6 +245,10 @@ void AREPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		{
 			EIC->BindAction(FlashlightAction, ETriggerEvent::Started, this, &AREPlayerCharacter::Input_Flashlight);
 		}
+		if (ToggleInventoryAction)
+		{
+			EIC->BindAction(ToggleInventoryAction, ETriggerEvent::Started, this, &AREPlayerCharacter::Input_ToggleInventory);
+		}
 	}
 
 	RegisterJumpMappingContext();
@@ -256,6 +326,39 @@ void AREPlayerCharacter::Input_Flashlight()
 	if (AbilitySystemComp)
 	{
 		AbilitySystemComp->TryActivateAbilityByClass(UGA_Flashlight::StaticClass());
+	}
+}
+
+void AREPlayerCharacter::Input_ToggleInventory()
+{
+	URENotifySubsystem* NotifySubsystem = URENotifySubsystem::GetInstance(this);
+
+	ULocalWidgetManager* WidgetManager = ULocalWidgetManager::GetInstance(this);
+	if (IsValid(WidgetManager) == false)
+	{
+		if (IsValid(NotifySubsystem) == true)
+		{
+			NotifySubsystem->NotifyEvent(RETag::Event::Debug::Test, TEXT("ToggleInventory - WidgetManager 없음"));
+		}
+		return;
+	}
+
+	UWidget* InventoryWidget = WidgetManager->FindWidget(FName("Inventory"));
+	if (IsValid(InventoryWidget) == false)
+	{
+		if (IsValid(NotifySubsystem) == true)
+		{
+			NotifySubsystem->NotifyEvent(RETag::Event::Debug::Test, TEXT("ToggleInventory - Inventory 위젯 미등록"));
+		}
+		return;
+	}
+
+	const bool bNewHidden = InventoryWidget->GetVisibility() != ESlateVisibility::Collapsed;
+	WidgetManager->SetWidgetHiddenInGame(FName("Inventory"), bNewHidden);
+
+	if (IsValid(NotifySubsystem) == true)
+	{
+		NotifySubsystem->NotifyEvent(RETag::Event::Debug::Test, FString::Printf(TEXT("ToggleInventory - Hidden=%d"), bNewHidden));
 	}
 }
 
