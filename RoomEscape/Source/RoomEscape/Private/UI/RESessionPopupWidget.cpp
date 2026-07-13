@@ -89,7 +89,7 @@ void URESessionPopupWidget::JoinGameSession()
 		return;
 	}
 
-	// 입력받은 Session 이름과 비밀번호를 사용하여 Game Host 시작
+	// 입력받은 Session 이름과 비밀번호를 사용하여 Game Join
 	//GameInstance->JoinGame(SessionName, SessionPassword);
 	DeactivateWidget();
 

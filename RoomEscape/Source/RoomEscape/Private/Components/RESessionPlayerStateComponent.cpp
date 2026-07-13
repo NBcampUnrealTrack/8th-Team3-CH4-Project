@@ -9,6 +9,7 @@
 #include "UI/LocalWidgetManager.h"
 #include "UI/RERootCanvasWidget.h"
 #include "UI/RESessionRoomWidget.h"
+#include "Game/REGameInstance.h"
 
 // Sets default values for this component's properties
 URESessionPlayerStateComponent::URESessionPlayerStateComponent()
@@ -110,6 +111,12 @@ void URESessionPlayerStateComponent::LeaveSessionRoom()
 	if (IsValid(SessionRoomWidgetInstance) == true)
 	{
 		SessionRoomWidgetInstance->DeactivateWidget();
+	}
+
+	UREGameInstance* GameInstance = GetWorld()->GetGameInstance<UREGameInstance>();
+	if (IsValid(GameInstance) == true)
+	{
+		//GameInstance->LeaveGame();
 	}
 }
 
