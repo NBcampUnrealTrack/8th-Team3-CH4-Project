@@ -25,6 +25,7 @@ void UREGameInstance::Init()
 			SharedSession->OnCreateSessionCompleteDelegates.AddUObject(this, &UREGameInstance::OnCreateSessionComplete);
 			SharedSession->OnFindSessionsCompleteDelegates.AddUObject(this, &UREGameInstance::OnFindSessionsComplete);
 			SharedSession->OnJoinSessionCompleteDelegates.AddUObject(this, &UREGameInstance::OnJoinSessionComplete);
+			SharedSession->OnDestroySessionCompleteDelegates.AddUObject(this, &UREGameInstance::OnDestroySessionComplete);
 		}
 	}
 }
@@ -133,4 +134,19 @@ void UREGameInstance::OnJoinSessionComplete(FName SessionName, EOnJoinSessionCom
 	{
 		OnJoinProcessResult.Broadcast(false, TEXT("접속에 실패했습니다."));
 	}
+}
+
+// -- 접속 해제 --
+
+void UREGameInstance::LeaveGame()
+{
+	if (TSharedPtr<IOnlineSession> SharedSession = SessionInterface.Pin())
+	{
+		SharedSession->DestroySession(FName("RoomEscapeSession"));
+	}
+}
+
+void UREGameInstance::OnDestroySessionComplete(FName SessionName, bool bWasSuccessful)
+{
+	UGameplayStatics::OpenLevel(GetWorld(), FName("/Game/Level/MainLevel?listen"));
 }
