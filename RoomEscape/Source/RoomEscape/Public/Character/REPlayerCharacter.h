@@ -24,6 +24,18 @@ public:
 
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
+	/*
+	 * Returns the replicated gameplay beam used by both the visible spotlight and
+	 * flashlight-reactive puzzle materials. GetBaseAimRotation keeps remote pitch
+	 * aligned without introducing a second custom aim replication path.
+	 */
+	bool GetFlashlightBeamData(
+		FVector& OutOrigin,
+		FVector& OutDirection,
+		float& OutRange,
+		float& OutInnerConeAngle,
+		float& OutOuterConeAngle) const;
+
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerInteract(AActor* Target);
 
@@ -113,6 +125,15 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Flashlight")
 	TObjectPtr<USpotLightComponent> FlashlightComponent;
 
+	UPROPERTY(Transient)
+	FVector CachedFlashlightRelativeLocation = FVector::ZeroVector;
+
+	UPROPERTY(Transient)
+	FRotator CachedFlashlightRelativeRotation = FRotator::ZeroRotator;
+
+	bool bHasCachedFlashlightRelativeTransform = false;
+	FTimerHandle FlashlightTransformTimerHandle;
+
 	UPROPERTY(ReplicatedUsing=OnRep_FlashlightOn, VisibleAnywhere, BlueprintReadOnly, Category="Flashlight")
 	bool bFlashlightOn = false;
 
@@ -123,5 +144,7 @@ private:
 	void RegisterJumpMappingContext();
 	void UnregisterJumpMappingContext();
 	UInputAction* GetJumpInputAction() const;
+	void CacheFlashlightRelativeTransform();
 	void ApplyFlashlightVisual();
+	void UpdateFlashlightTransform();
 };
