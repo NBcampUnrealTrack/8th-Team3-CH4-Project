@@ -4,17 +4,11 @@
 #include "Puzzles/Framework/REPuzzleActor.h"
 #include "REGlowPaintClueActor.generated.h"
 
-class APawn;
 class ARELockAndGlowClueManager;
+class AREPlayerCharacter;
+class UMaterialInstanceDynamic;
 class UMaterialInterface;
 class UStaticMeshComponent;
-
-UENUM(BlueprintType)
-enum class EREGlowClueVisibilityAuthority : uint8
-{
-	ServerRelevantFlashlights UMETA(DisplayName = "Server Relevant Flashlights"),
-	LocalViewingPlayer UMETA(DisplayName = "Local Viewing Player")
-};
 
 UCLASS(Blueprintable)
 class ROOMESCAPE_API AREGlowPaintClueActor : public AREPuzzleActor
@@ -27,67 +21,55 @@ public:
 	virtual void OnConstruction(const FTransform& Transform) override;
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 protected:
 	/*
-	 * A simple world-space plane for the hidden number decal.
-	 * Put a material instance made from M_GlowNumber on this component.
-	 * The material should use a transparent number PNG alpha as Opacity Mask.
+	 * World-space plane that contains the hidden clue texture.
+	 * At runtime the component stays hidden unless at least one real flashlight beam
+	 * reaches its bounds. A dynamic material then masks the visible pixels to the
+	 * actual spotlight cone.
 	 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Glow Clue", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UStaticMeshComponent> CluePlaneComponent;
 
+	/*
+	 * Material used to render the clue. For pixel-accurate beam reveal, the material
+	 * must implement the GlowReveal_* parameters documented with this patch.
+	 * Without those parameters the C++ cone test still provides an actor-level fallback.
+	 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Glow Clue|Material", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UMaterialInterface> VisibleEmissiveMaterial;
 
 	/*
-	 * ServerRelevantFlashlights keeps the clue as one shared world-state in multiplayer.
-	 * If any relevant player's flashlight is on, every client sees the clue hidden.
-	 * LocalViewingPlayer exists only for intentionally client-local clue behavior.
+	 * A flashlight is considered only while its owning character is inside this distance
+	 * from the clue. This is intentionally independent from the spotlight attenuation
+	 * radius, so a long-range flashlight cannot reveal the clue from across the room.
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Glow Clue|Visibility", meta = (AllowPrivateAccess = "true"))
-	EREGlowClueVisibilityAuthority VisibilityAuthority = EREGlowClueVisibilityAuthority::ServerRelevantFlashlights;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Glow Clue|Visibility", meta = (AllowPrivateAccess = "true"))
-	bool bVisibleOnlyWhenFlashlightOff = true;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Glow Clue|Flashlight Reveal", meta = (ClampMin = "1.0", Units = "cm", AllowPrivateAccess = "true"))
+	float FlashlightRecognitionRange = 500.0f;
 
 	/*
-	 * Prevents a clue from revealing itself just because every player is far enough
-	 * away to be ignored by FlashlightInfluenceRadius. With this enabled, at least
-	 * one relevant local/server player must be inside the influence area before the
-	 * clue can become visible. This makes the game default to hidden and reveal
-	 * only when someone is actually near the clue in darkness.
+	 * Prevents a flashlight in another room from revealing the clue through a wall.
+	 * The visibility trace is visual-only and is evaluated independently on each client.
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Glow Clue|Visibility", meta = (AllowPrivateAccess = "true"))
-	bool bRequireRelevantPlayerToReveal = true;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Glow Clue|Flashlight Reveal", meta = (AllowPrivateAccess = "true"))
+	bool bRequireLineOfSightToInfluencingFlashlight = true;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Glow Clue|Visibility", meta = (AllowPrivateAccess = "true"))
-	bool bEnableCollisionWhenVisible = false;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Glow Clue|Flashlight Reveal", meta = (AllowPrivateAccess = "true"))
+	TEnumAsByte<ECollisionChannel> OcclusionTraceChannel = ECC_Visibility;
+
+	/* Moves the trace target slightly toward the flashlight to avoid the wall behind a clue plane. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Glow Clue|Flashlight Reveal", meta = (ClampMin = "0.0", Units = "cm", AllowPrivateAccess = "true"))
+	float OcclusionTraceEndOffset = 2.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Glow Clue|Visibility", meta = (AllowPrivateAccess = "true"))
 	bool bHideAfterPuzzleSolved = false;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Glow Clue|Visibility", meta = (ClampMin = "0.02", AllowPrivateAccess = "true"))
-	float VisibilityRefreshInterval = 0.1f;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Glow Clue|Performance", meta = (ClampMin = "0.02", ClampMax = "0.25", AllowPrivateAccess = "true"))
+	float VisibilityRefreshInterval = 0.03f;
 
-	/*
-	 * Only flashlights inside this radius affect this clue.
-	 * Keep this > 0 to avoid a flashlight in another room hiding every clue in the level.
-	 * Set 0 if the clue should react to any flashlight in the current world.
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Glow Clue|Visibility|Server Authority", meta = (ClampMin = "0.0", Units = "cm", AllowPrivateAccess = "true"))
-	float FlashlightInfluenceRadius = 1500.0f;
-
-	/*
-	 * Optional room-aware filtering. Enable when walls should block another room's
-	 * flashlight from affecting this clue.
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Glow Clue|Visibility|Server Authority", meta = (AllowPrivateAccess = "true"))
-	bool bRequireLineOfSightToInfluencingFlashlight = false;
-
-	UPROPERTY(ReplicatedUsing = OnRep_ReplicatedClueVisible, Transient, BlueprintReadOnly, Category = "Glow Clue|Runtime", meta = (AllowPrivateAccess = "true"))
-	bool bReplicatedClueVisible = false;
+	UPROPERTY(Transient)
+	TObjectPtr<UMaterialInstanceDynamic> DynamicRevealMaterial;
 
 	bool bCurrentlyVisible = false;
 	bool bClueVisibilityInitialized = false;
@@ -99,6 +81,7 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Glow Clue")
 	ARELockAndGlowClueManager* GetLockAndGlowManager() const;
 
+	/* True when at least one unobstructed flashlight beam currently reaches this clue. */
 	UFUNCTION(BlueprintPure, Category = "Glow Clue")
 	bool IsClueVisible() const;
 
@@ -108,26 +91,37 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Glow Clue")
 	void SetVisibleEmissiveMaterial(UMaterialInterface* NewMaterial);
 
+	/* Kept as the public refresh entry point used by the puzzle manager and existing Blueprints. */
 	UFUNCTION(BlueprintCallable, Category = "Glow Clue")
 	void RefreshClueVisibility();
 
 protected:
+	virtual void HandlePuzzleManagerChanged() override;
+
 	UFUNCTION(BlueprintImplementableEvent, Category = "Glow Clue")
 	void ReceiveClueVisibilityChanged(bool bNewVisible);
 
 private:
-	UFUNCTION()
-	void OnRep_ReplicatedClueVisible();
+	struct FFlashlightRevealData
+	{
+		TWeakObjectPtr<AREPlayerCharacter> SourceCharacter;
+		FVector Position = FVector::ZeroVector;
+		FVector Direction = FVector::ForwardVector;
+		float Range = 0.0f;
+		float InnerConeCos = 1.0f;
+		float OuterConeCos = 1.0f;
+	};
 
-	bool ShouldBeVisible() const;
 	bool ShouldBeVisibleByPuzzleState() const;
-	bool HasRelevantViewer() const;
-	bool HasLocalRelevantViewer() const;
-	bool IsLocalFlashlightOn() const;
-	bool IsAnyRelevantFlashlightOn() const;
-	bool IsPawnFlashlightOn(const APawn* Pawn) const;
-	bool IsFlashlightRelevant(const APawn* Pawn) const;
-	void SetAuthoritativeClueVisibility(bool bNewVisible);
+	void CollectAffectingFlashlights(TArray<FFlashlightRevealData>& OutFlashlights) const;
+	bool BuildFlashlightRevealData(AREPlayerCharacter* PlayerCharacter, FFlashlightRevealData& OutData) const;
+	bool IsSourceCharacterWithinRecognitionRange(const FFlashlightRevealData& FlashlightData) const;
+	bool DoesFlashlightConeReachClue(const FFlashlightRevealData& FlashlightData) const;
+	bool HasUnobstructedFlashlightPath(const FFlashlightRevealData& FlashlightData) const;
+
 	void ApplyClueMaterial();
+	void EnsureDynamicRevealMaterial();
+	void UpdateMaterialRevealParameters(bool bPuzzleAllowsReveal, const TArray<FFlashlightRevealData>& Flashlights);
+	void SetMaterialFlashlightParameters(int32 LightIndex, const FFlashlightRevealData* FlashlightData);
 	void ApplyClueVisibility(bool bNewVisible);
 };
