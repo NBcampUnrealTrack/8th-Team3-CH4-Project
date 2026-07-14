@@ -22,6 +22,7 @@
 #include "UI/LocalWidgetManager.h"
 #include "UI/RERootCanvasWidget.h"
 #include "Widgets/CommonActivatableWidgetContainer.h"
+#include "TimerManager.h"
 
 AREPlayerCharacter::AREPlayerCharacter()
 {
@@ -73,6 +74,8 @@ void AREPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	ApplyJumpMovementSettings();
+	CacheFlashlightRelativeTransform();
+	ApplyFlashlightVisual();
 }
 
 void AREPlayerCharacter::PawnClientRestart()
@@ -139,6 +142,38 @@ UAbilitySystemComponent* AREPlayerCharacter::GetAbilitySystemComponent() const
 	return AbilitySystemComp;
 }
 
+bool AREPlayerCharacter::GetFlashlightBeamData(
+	FVector& OutOrigin,
+	FVector& OutDirection,
+	float& OutRange,
+	float& OutInnerConeAngle,
+	float& OutOuterConeAngle) const
+{
+	if (IsFlashlightOn() == false || IsValid(FlashlightComponent) == false)
+	{
+		return false;
+	}
+
+	const FRotator AimRotation = GetBaseAimRotation();
+	const FVector ViewOrigin = IsValid(FirstPersonCamera) == true
+		? FirstPersonCamera->GetComponentLocation()
+		: GetPawnViewLocation();
+	const FVector RelativeLocation = bHasCachedFlashlightRelativeTransform == true
+		? CachedFlashlightRelativeLocation
+		: FlashlightComponent->GetRelativeLocation();
+	const FRotator RelativeRotation = bHasCachedFlashlightRelativeTransform == true
+		? CachedFlashlightRelativeRotation
+		: FlashlightComponent->GetRelativeRotation();
+
+	OutOrigin = ViewOrigin + AimRotation.RotateVector(RelativeLocation);
+	OutDirection = AimRotation.RotateVector(RelativeRotation.Vector()).GetSafeNormal();
+	OutRange = FMath::Max(FlashlightComponent->AttenuationRadius, 0.0f);
+	OutInnerConeAngle = FMath::Clamp(FlashlightComponent->InnerConeAngle, 0.0f, 89.0f);
+	OutOuterConeAngle = FMath::Clamp(FlashlightComponent->OuterConeAngle, OutInnerConeAngle, 89.0f);
+
+	return OutRange > KINDA_SMALL_NUMBER && OutDirection.IsNearlyZero() == false;
+}
+
 void AREPlayerCharacter::ServerInteract_Implementation(AActor* Target)
 {
 	if (!Target || !Target->Implements<UREInteractable>())
@@ -188,6 +223,8 @@ void AREPlayerCharacter::ServerToggleFlashlight_Implementation()
 			AbilitySystemComp->RemoveLooseGameplayTag(RETag::State::Flashlight::On);
 		}
 	}
+
+	ForceNetUpdate();
 }
 
 bool AREPlayerCharacter::ServerToggleFlashlight_Validate()
@@ -259,6 +296,11 @@ void AREPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 
 void AREPlayerCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(FlashlightTransformTimerHandle);
+	}
+
 	UnregisterJumpMappingContext();
 	Super::EndPlay(EndPlayReason);
 }
@@ -472,10 +514,71 @@ UInputAction* AREPlayerCharacter::GetJumpInputAction() const
 	return IsValid(JumpAction) == true ? JumpAction.Get() : NativeJumpAction.Get();
 }
 
+void AREPlayerCharacter::CacheFlashlightRelativeTransform()
+{
+	if (bHasCachedFlashlightRelativeTransform == true)
+	{
+		return;
+	}
+
+	if (IsValid(FlashlightComponent) == false)
+	{
+		bHasCachedFlashlightRelativeTransform = false;
+		return;
+	}
+
+	CachedFlashlightRelativeLocation = FlashlightComponent->GetRelativeLocation();
+	CachedFlashlightRelativeRotation = FlashlightComponent->GetRelativeRotation();
+	bHasCachedFlashlightRelativeTransform = true;
+}
+
 void AREPlayerCharacter::ApplyFlashlightVisual()
 {
-	if (FlashlightComponent)
+	UWorld* World = GetWorld();
+	if (IsValid(World) == true)
 	{
-		FlashlightComponent->SetVisibility(bFlashlightOn);
+		World->GetTimerManager().ClearTimer(FlashlightTransformTimerHandle);
 	}
+
+	if (IsValid(FlashlightComponent) == false)
+	{
+		return;
+	}
+
+	CacheFlashlightRelativeTransform();
+	FlashlightComponent->SetVisibility(bFlashlightOn);
+
+	if (bFlashlightOn == false || GetNetMode() == NM_DedicatedServer || IsValid(World) == false)
+	{
+		return;
+	}
+
+	UpdateFlashlightTransform();
+	World->GetTimerManager().SetTimer(
+		FlashlightTransformTimerHandle,
+		this,
+		&ThisClass::UpdateFlashlightTransform,
+		1.0f / 60.0f,
+		true);
+}
+
+void AREPlayerCharacter::UpdateFlashlightTransform()
+{
+	if (IsValid(FlashlightComponent) == false)
+	{
+		return;
+	}
+
+	FVector BeamOrigin = FVector::ZeroVector;
+	FVector BeamDirection = FVector::ForwardVector;
+	float BeamRange = 0.0f;
+	float InnerConeAngle = 0.0f;
+	float OuterConeAngle = 0.0f;
+
+	if (GetFlashlightBeamData(BeamOrigin, BeamDirection, BeamRange, InnerConeAngle, OuterConeAngle) == false)
+	{
+		return;
+	}
+
+	FlashlightComponent->SetWorldLocationAndRotation(BeamOrigin, BeamDirection.Rotation());
 }
