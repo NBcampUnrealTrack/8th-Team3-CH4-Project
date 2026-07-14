@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "CommonActivatableWidget.h"
-#include "Components/TimelineComponent.h"
 #include "RERootCanvasWidget.generated.h"
 
 class UCommonActivatableWidgetStack;

@@ -113,13 +113,25 @@ void AREProgressionManager::HandleBombFailed()
 		return;
 	}
 
+	const float BombFailurePresentationSeconds = IsValid(BombManager)
+		? BombManager->GetBadEndingResetDelaySeconds()
+		: 0.0f;
+	const float EffectiveBadEndingDelaySeconds = FMath::Max(
+		FMath::Max(0.0f, BadEndingDelaySeconds),
+		BombFailurePresentationSeconds);
+
 	NotifyProgress(RETag::Event::Progress::BadEnding.GetTag(),
-		FString::Printf(TEXT("폭탄 폭발 - %.1f초 후 탈출 시퀀스 재시작"), BadEndingDelaySeconds));
+		FString::Printf(TEXT("폭탄 폭발 - %.1f초 후 탈출 시퀀스 재시작"), EffectiveBadEndingDelaySeconds));
 	MulticastBadEndingStarted();
 
-	if (BadEndingDelaySeconds > 0.0f)
+	if (EffectiveBadEndingDelaySeconds > 0.0f)
 	{
-		GetWorldTimerManager().SetTimer(BadEndingTimerHandle, this, &ThisClass::RestartEscapePhase, BadEndingDelaySeconds, false);
+		GetWorldTimerManager().SetTimer(
+			BadEndingTimerHandle,
+			this,
+			&ThisClass::RestartEscapePhase,
+			EffectiveBadEndingDelaySeconds,
+			false);
 	}
 	else
 	{
