@@ -1,4 +1,6 @@
 #include "Puzzles/LockAndGlow/RELockAndGlowClueManager.h"
+
+#include "Containers/AllowShrinking.h"
 #include "Puzzles/LockAndGlow/REDialLockDevice.h"
 #include "Puzzles/LockAndGlow/REGlowPaintClueActor.h"
 
@@ -135,7 +137,7 @@ FString ARELockAndGlowClueManager::NormalizeSolutionCode() const
 
 	if (DigitsOnly.Len() > DesiredLength)
 	{
-		DigitsOnly.LeftInline(DesiredLength, false);
+		DigitsOnly.LeftInline(DesiredLength, EAllowShrinking::No);
 	}
 
 	return DigitsOnly;
