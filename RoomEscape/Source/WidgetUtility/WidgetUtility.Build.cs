@@ -27,7 +27,10 @@ public class WidgetUtility : ModuleRules
 				// ... add other public dependencies that you statically link with here ...
 				"Engine",
                 "UMG",
-                "DeveloperSettings"
+                "CommonUI",
+                "CommonInput",
+                "DeveloperSettings",
+                "GameplayTags",
             }
             );
 

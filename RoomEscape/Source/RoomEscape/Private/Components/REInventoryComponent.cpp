@@ -5,6 +5,8 @@
 #include "Item/ItemDataAsset.h"
 #include "UI/LocalWidgetManager.h"
 #include "UI/InitializeUtilityInterface.h"
+#include "UI/RERootCanvasWidget.h"
+#include "Widgets/CommonActivatableWidgetContainer.h"
 
 // Sets default values for this component's properties
 UREInventoryComponent::UREInventoryComponent()
@@ -44,21 +46,40 @@ void UREInventoryComponent::InitWidget_Implementation()
 		return;
 	}
 
-	// Widget 생성 및 유효성 확인
-	UUserWidget* InventoryWidget = WidgetManager->AddWidget(FName("Inventory"), InventoryWidgetClass);
+	// BeginPlay와 PawnClientRestart 양쪽에서 호출될 수 있으므로 중복 생성 방지
+	if (IsValid(WidgetManager->FindWidget(FName("Inventory"))) == true)
+	{
+		return;
+	}
+
+	// RootCanvas 및 OverlayLayer 유효성 확인
+	URERootCanvasWidget* RootCanvasWidget = Cast<URERootCanvasWidget>(WidgetManager->GetRootWidget());
+	if (IsValid(RootCanvasWidget) == false)
+	{
+		return;
+	}
+
+	UCommonActivatableWidgetStack* OverlayLayer = RootCanvasWidget->GetOverlayWidgetStack();
+	if (IsValid(OverlayLayer) == false)
+	{
+		return;
+	}
+
+	// OverlayLayer에 Widget 생성(Push) 및 유효성 확인
+	UCommonActivatableWidget* InventoryWidget = OverlayLayer->AddWidget<UCommonActivatableWidget>(InventoryWidgetClass);
 	if (IsValid(InventoryWidget) == false)
 	{
 		return;
 	}
 
+	// 캐릭터의 토글 입력 등에서 FindWidget("Inventory")로 접근할 수 있도록 등록
+	WidgetManager->AddWidgetInstance(FName("Inventory"), InventoryWidget);
+
 	// Widget 초기화
 	IInitializeUtilityInterface::Execute_InitializeWidgetByComponent(InventoryWidget, this);
 
-	/*
-	* HUD Widget 구현 후 InventoryWidget을 HUD Widget의 Child로 추가하도록 수정 필요
-	*/
-	UE_LOG(LogTemp, Warning, TEXT("# InventoryWidget을 HUD Widget의 Child로 추가하도록 수정 필요"));
-	InventoryWidget->AddToPlayerScreen();
+	// 시작 시에는 숨김 상태, 토글 입력(I키)으로 표시
+	WidgetManager->SetWidgetHiddenInGame(FName("Inventory"), true);
 }
 
 // Called every frame
