@@ -12,7 +12,8 @@
 void URESessionPopupWidget::AddPopupButton_HostGame()
 {
 	URETextButtonBase* Button_HostGame = AddPopupButton(FText::FromString(TEXT("Create Session")));
-	Button_HostGame->OnButtonClicked.AddUniqueDynamic(this, &ThisClass::HostGameSession);
+	Button_HostGame->OnClicked().RemoveAll(this);
+	Button_HostGame->OnClicked().AddUObject(this, &ThisClass::HostGameSession);
 }
 
 void URESessionPopupWidget::HostGameSession()
@@ -55,7 +56,8 @@ void URESessionPopupWidget::HostGameSession()
 void URESessionPopupWidget::AddPopupButton_JoinGame()
 {
 	URETextButtonBase* Button_JoinGame = AddPopupButton(FText::FromString(TEXT("Join Session")));
-	Button_JoinGame->OnButtonClicked.AddUniqueDynamic(this, &ThisClass::JoinGameSession);
+	Button_JoinGame->OnClicked().RemoveAll(this);
+	Button_JoinGame->OnClicked().AddUObject(this, &ThisClass::JoinGameSession);
 }
 
 void URESessionPopupWidget::JoinGameSession()
@@ -87,7 +89,7 @@ void URESessionPopupWidget::JoinGameSession()
 		return;
 	}
 
-	// 입력받은 Session 이름과 비밀번호를 사용하여 Game Host 시작
+	// 입력받은 Session 이름과 비밀번호를 사용하여 Game Join
 	//GameInstance->JoinGame(SessionName, SessionPassword);
 	DeactivateWidget();
 

@@ -67,8 +67,9 @@ protected:
 	UPROPERTY(EditInstanceOnly, Category = "Progression|Wiring")
 	TObjectPtr<AREPuzzleResetPoint> RestartPointB;
 
-	// 배드엔딩(사망 연출) 후 2부 재시작까지 대기 시간
-	UPROPERTY(EditAnywhere, Category = "Progression|Rule", meta = (ClampMin = "0.0"))
+	// 배드엔딩(사망 연출) 후 2부 재시작까지의 기본 대기 시간.
+	// 실제 대기 시간은 BombManager의 실패 메시지 최소 표시 시간보다 짧아질 수 없습니다.
+	UPROPERTY(EditAnywhere, Category = "Progression|Rule", meta = (ClampMin = "0.0", Units = "s"))
 	float BadEndingDelaySeconds = 5.0f;
 
 	// 리슨 서버 호스트를 Player A(지하 진입자)로 볼지 여부

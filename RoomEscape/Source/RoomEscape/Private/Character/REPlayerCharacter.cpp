@@ -161,7 +161,10 @@ void AREPlayerCharacter::ServerInteract_Implementation(AActor* Target)
 		IREInteractable::Execute_Interact(Target, this);
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("[ServerInteract] %s -> %s"), *GetName(), *Target->GetName());
+	UE_LOG(LogTemp, Log,
+		TEXT("[ServerInteract] Dispatched request: %s -> %s. Target acceptance/rejection is logged by the target actor."),
+		*GetName(),
+		*Target->GetName());
 }
 
 bool AREPlayerCharacter::ServerInteract_Validate(AActor* Target)
