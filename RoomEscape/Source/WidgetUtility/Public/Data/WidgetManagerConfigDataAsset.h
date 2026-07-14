@@ -6,6 +6,21 @@
 #include "Engine/DataAsset.h"
 #include "WidgetManagerConfigDataAsset.generated.h"
 
+USTRUCT()
+struct WIDGETUTILITY_API FWidgetConfigData
+{
+    GENERATED_BODY()
+
+public:
+    // 등록될 Widget 이름
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Root Widget")
+    FName WidgetName;
+
+    // 등록될 Widget의 클래스
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Root Widget")
+    TSoftClassPtr<UUserWidget> WidgetClass;
+};
+
 /**
  * LocalWidgetManger 실행 시 내부 변수에 대하여 config 파일에 저장된 값을 사용하기 위한 데이터 에셋 클래스
  */
@@ -22,4 +37,5 @@ public:
     // Root UI로 등록될 Widget의 클래스
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Root Widget")
     TSoftClassPtr<UUserWidget> RootWidgetClass;
+
 };

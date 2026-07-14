@@ -24,6 +24,12 @@ void UInventoryWidget::NativeOnDeactivated()
 	Super::NativeOnDeactivated();
 }
 
+FReply UInventoryWidget::NativeOnPreviewKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
+{
+    Super::NativeOnPreviewKeyDown(InGeometry, InKeyEvent);
+    return FReply::Handled();
+}
+
 void UInventoryWidget::InitializeWidgetByContextObject_Implementation(UObject* ContextObject)
 {
 }

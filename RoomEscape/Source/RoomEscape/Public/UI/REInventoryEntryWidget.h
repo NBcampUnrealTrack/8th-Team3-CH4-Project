@@ -13,14 +13,18 @@ DECLARE_DELEGATE_RetVal_OneParam(FPrimaryAssetId, FInventoryEntryClickedSignatur
  * 
  */
 UCLASS()
-class ROOMESCAPE_API UREInventoryEntryWidget : public UCommonButtonBase, public IUserObjectListEntry
+class ROOMESCAPE_API UREInventoryEntryWidget : public UUserWidget, public IUserObjectListEntry
 {
 	GENERATED_BODY()
 
 public:
 	virtual void NativeConstruct() override;
 	
-	virtual void NativeOnClicked() override;
+	virtual FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
+
+	virtual void NativeOnDragDetected(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent, UDragDropOperation*& OutOperation) override;
+
+	virtual FReply NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
 
 public:
 	// 인벤토리 슬롯을 클릭했을 경우 실행되는 이벤트
