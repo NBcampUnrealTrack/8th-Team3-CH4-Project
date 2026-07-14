@@ -22,6 +22,7 @@ URESessionPlayerStateComponent::URESessionPlayerStateComponent()
 	SetIsReplicatedByDefault(true);
 }
 
+
 // Called when the game starts
 void URESessionPlayerStateComponent::BeginPlay()
 {
@@ -37,18 +38,15 @@ void URESessionPlayerStateComponent::GetLifetimeReplicatedProps(TArray<class FLi
 
 	DOREPLIFETIME(ThisClass, bIsInSessionRoom);
 	DOREPLIFETIME(ThisClass, bIsPlayerReady);
-	DOREPLIFETIME(ThisClass, SpawnRoomType);
 }
 
-void URESessionPlayerStateComponent::OnComponentDestroyed(bool bDestroyingHierarchy)
-{
-	// Session Room Widget 비활성화
-	if (IsValid(SessionRoomWidgetInstance) == true)
-	{
-		SessionRoomWidgetInstance->DeactivateWidget();
-	}
 
-	Super::OnComponentDestroyed(bDestroyingHierarchy);
+// Called every frame
+void URESessionPlayerStateComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+{
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+	// ...
 }
 
 void URESessionPlayerStateComponent::InitWidget_Implementation()
@@ -120,18 +118,6 @@ void URESessionPlayerStateComponent::LeaveSessionRoom()
 	}
 }
 
-void URESessionPlayerStateComponent::ChangeSpawnRoomType(ERESpawnRoomType TargetRoomType)
-{
-	// Local Player 환경 실행 검사
-	if (IsValid(OwnerPlayerState) == false || OwnerPlayerState->HasLocalNetOwner() == false)
-	{
-		return;
-	}
-
-	// 서버에게 플레이어가 스폰될 방을 변경한다고 알림
-	ServerRequestChangeSpawnRoomType(TargetRoomType);
-}
-
 void URESessionPlayerStateComponent::ServerBroadcastPlayerInSessionRoom_Implementation(bool bIsJoin)
 {
 	// 서버에서만 실행되도록 확인
@@ -142,12 +128,6 @@ void URESessionPlayerStateComponent::ServerBroadcastPlayerInSessionRoom_Implemen
 
 	// Session Room에 참여하였는지를 판단하는 플래그 값 변경
 	bIsInSessionRoom = bIsJoin;
-
-	// Session Room 참여 또는 퇴장 시 Ready 상태는 false로 고정 변경
-	bIsPlayerReady = false;
-
-	// Session Room 참여 시 Spawn Room Type은 Alpha로 설정, 퇴장 시 None으로 설정
-	SpawnRoomType = bIsJoin == true ? ERESpawnRoomType::Alpha : ERESpawnRoomType::None;
 
 	// World에 존재하는 모든 PlayerState 중에서 Session에 참여되어있는 모든 Client에게 전파
 	for (TActorIterator<APlayerState> It(GetWorld()); It; ++It)
@@ -222,14 +202,14 @@ void URESessionPlayerStateComponent::UpdateAllPlayersInSessionRoom()
 		}
 
 		// Session Room 참여 상태를 관리하는 Component 얻기
-		URESessionPlayerStateComponent* SessionRoomComponent = ClientState->FindComponentByClass<URESessionPlayerStateComponent>();
-		if (IsValid(SessionRoomComponent) == false)
+		URESessionPlayerStateComponent* SessionComponent = ClientState->FindComponentByClass<URESessionPlayerStateComponent>();
+		if (IsValid(SessionComponent) == false)
 		{
 			continue;
 		}
 
 		// 클라이언트가 현재 SessionRoom에 참여한 상태인지 확인
-		if (SessionRoomComponent->bIsInSessionRoom == true)
+		if (SessionComponent->bIsInSessionRoom == true)
 		{
 			// 해당 플레이어가 현재 SessionRoom UI에 추가
 			SessionRoomWidgetInstance->AddJoinedPlayer(ClientState);
@@ -267,7 +247,7 @@ void URESessionPlayerStateComponent::OnReadyButtonClicked()
 	}
 }
 
-bool URESessionPlayerStateComponent::CheckAllPlayerIsReady() const
+bool URESessionPlayerStateComponent::CheckAllPlayerIsReady()
 {
 	// World에 존재하는 모든 PlayerState 중에서 Session에 참여되어있는 모든 PlayerState 대상 검사
 	for (TActorIterator<APlayerState> It(GetWorld()); It; ++It)
@@ -300,10 +280,6 @@ bool URESessionPlayerStateComponent::CheckAllPlayerIsReady() const
 	}
 	return true;
 }
-
-void URESessionPlayerStateComponent::OnRep_IsPlayerReady() const { OnSessionPlayerStateChanged.Broadcast(OwnerPlayerState); }
-
-void URESessionPlayerStateComponent::OnRep_SpawnRoomType() const { OnSessionPlayerStateChanged.Broadcast(OwnerPlayerState); }
 
 void URESessionPlayerStateComponent::ServerRequestChangeReadyState_Implementation(bool bNewReadyState)
 {
