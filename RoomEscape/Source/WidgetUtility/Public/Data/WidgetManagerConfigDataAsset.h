@@ -6,7 +6,7 @@
 #include "Engine/DataAsset.h"
 #include "WidgetManagerConfigDataAsset.generated.h"
 
-USTRUCT()
+USTRUCT(BlueprintType)
 struct WIDGETUTILITY_API FWidgetConfigData
 {
     GENERATED_BODY()
