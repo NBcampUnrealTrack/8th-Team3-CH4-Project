@@ -15,7 +15,25 @@ void URESessionRoomWidget::NativeConstruct()
 
 	if (IsValid(Button_Ready) == true)
 	{
-		Button_Ready->OnClicked.AddDynamic(this, &ThisClass::OnReadyButtonClicked);
+		Button_Ready->OnClicked().RemoveAll(this);
+		Button_Ready->OnClicked().AddUObject(this, &ThisClass::OnReadyButtonClicked);
+	}
+	if (IsValid(Button_Exit) == true)
+	{
+		Button_Exit->OnClicked().RemoveAll(this);
+		Button_Exit->OnClicked().AddUObject(this, &ThisClass::OnExitButtonClicked);
+	}
+}
+
+void URESessionRoomWidget::SetSessionNameAndPassword(FText SessionName, FText SessionPassword)
+{
+	if (IsValid(TextBlock_SessionName) == true)
+	{
+		TextBlock_SessionName->SetText(SessionName);
+	}
+	if (IsValid(TextBlock_SessionPassword) == true)
+	{
+		TextBlock_SessionPassword->SetText(SessionPassword);
 	}
 }
 
