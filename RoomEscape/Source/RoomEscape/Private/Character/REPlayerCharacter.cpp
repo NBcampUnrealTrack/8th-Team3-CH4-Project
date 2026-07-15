@@ -18,7 +18,6 @@
 #include "Net/UnrealNetwork.h"
 #include "Puzzles/Framework/REPuzzleInteractableActor.h"
 #include "Components/REInventoryComponent.h"
-#include "Game/RENotifySubsystem.h"
 #include "UI/LocalWidgetManager.h"
 #include "UI/RERootCanvasWidget.h"
 #include "Widgets/CommonActivatableWidgetContainer.h"
@@ -326,6 +325,12 @@ void AREPlayerCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProper
 
 void AREPlayerCharacter::Input_Interact()
 {
+	// 인벤토리/퍼즐 위젯 등 UI가 입력을 점유 중이면 상호작용 차단 (점프와 동일 규약)
+	if (Controller && Controller->IsMoveInputIgnored())
+	{
+		return;
+	}
+
 	if (AbilitySystemComp)
 	{
 		AbilitySystemComp->TryActivateAbilityByClass(UGA_Interact::StaticClass());
@@ -368,6 +373,12 @@ void AREPlayerCharacter::Input_JumpCompleted()
 
 void AREPlayerCharacter::Input_Flashlight()
 {
+	// UI가 입력을 점유 중이면 손전등 토글 차단
+	if (Controller && Controller->IsMoveInputIgnored())
+	{
+		return;
+	}
+
 	if (AbilitySystemComp)
 	{
 		AbilitySystemComp->TryActivateAbilityByClass(UGA_Flashlight::StaticClass());
@@ -376,34 +387,56 @@ void AREPlayerCharacter::Input_Flashlight()
 
 void AREPlayerCharacter::Input_ToggleInventory()
 {
-	URENotifySubsystem* NotifySubsystem = URENotifySubsystem::GetInstance(this);
-
 	ULocalWidgetManager* WidgetManager = ULocalWidgetManager::GetInstance(this);
 	if (IsValid(WidgetManager) == false)
 	{
-		if (IsValid(NotifySubsystem) == true)
-		{
-			NotifySubsystem->NotifyEvent(RETag::Event::Debug::Test, TEXT("ToggleInventory - WidgetManager 없음"));
-		}
 		return;
 	}
 
 	UWidget* InventoryWidget = WidgetManager->FindWidget(FName("Inventory"));
 	if (IsValid(InventoryWidget) == false)
 	{
-		if (IsValid(NotifySubsystem) == true)
-		{
-			NotifySubsystem->NotifyEvent(RETag::Event::Debug::Test, TEXT("ToggleInventory - Inventory 위젯 미등록"));
-		}
 		return;
 	}
 
 	const bool bNewHidden = InventoryWidget->GetVisibility() != ESlateVisibility::Collapsed;
+
+	// 열려는 시점에 이미 다른 UI(퍼즐 위젯 등)가 입력을 점유 중이면 열지 않음
+	// (닫을 때는 인벤토리 자신이 점유 중이므로 통과되어야 함)
+	if (bNewHidden == false && Controller && Controller->IsMoveInputIgnored())
+	{
+		return;
+	}
+
 	WidgetManager->SetWidgetHiddenInGame(FName("Inventory"), bNewHidden);
 
-	if (IsValid(NotifySubsystem) == true)
+	APlayerController* PlayerController = Cast<APlayerController>(GetController());
+	if (IsValid(PlayerController) == false)
 	{
-		NotifySubsystem->NotifyEvent(RETag::Event::Debug::Test, FString::Printf(TEXT("ToggleInventory - Hidden=%d"), bNewHidden));
+		return;
+	}
+
+	if (bNewHidden == true)
+	{
+		// 인벤토리 닫힘 - 게임 입력 복원
+		PlayerController->ResetIgnoreMoveInput();
+		PlayerController->ResetIgnoreLookInput();
+		PlayerController->bShowMouseCursor = false;
+		PlayerController->SetInputMode(FInputModeGameOnly());
+		PlayerController->FlushPressedKeys();
+	}
+	else
+	{
+		// 인벤토리 열림 - 이동/시선 차단 + 마우스 커서 표시
+		// 위젯에 포커스를 주지 않아야 토글 키(I) 입력이 계속 동작함
+		PlayerController->bShowMouseCursor = true;
+		PlayerController->SetIgnoreMoveInput(true);
+		PlayerController->SetIgnoreLookInput(true);
+
+		FInputModeGameAndUI InputMode;
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		InputMode.SetHideCursorDuringCapture(false);
+		PlayerController->SetInputMode(InputMode);
 	}
 }
 
