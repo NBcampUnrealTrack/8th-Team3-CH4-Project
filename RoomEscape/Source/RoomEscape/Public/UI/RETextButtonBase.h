@@ -6,6 +6,8 @@
 #include "CommonButtonBase.h"
 #include "RETextButtonBase.generated.h"
 
+class UCommonTextBlock;
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnButtonClickedSignature);
 
 /**
@@ -20,8 +22,10 @@ public:
 	virtual void NativePreConstruct() override;
 
 protected:
+	virtual void NativeOnCurrentTextStyleChanged() override;
+	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (BindWidget))
-	TObjectPtr<class UTextBlock> TextBlock_ButtonText;
+	TObjectPtr<class UCommonTextBlock> TextBlock_ButtonText;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Getter = GetButtonText, Setter = SetButtonText, meta = (AllowPrivateAccess = "true"), Category = "Appearance")
 	FText ButtonText;
