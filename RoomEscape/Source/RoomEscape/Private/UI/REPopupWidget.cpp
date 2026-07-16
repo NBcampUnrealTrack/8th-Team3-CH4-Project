@@ -65,7 +65,8 @@ URETextButtonBase* UREPopupWidget::AddPopupButton(FText Text_Button)
 void UREPopupWidget::AddPopupButton_Cancel()
 {
 	URETextButtonBase* Button_Cancel = AddPopupButton(FText::FromString(TEXT("Cancel")));
-	Button_Cancel->OnButtonClicked.AddUniqueDynamic(this, &ThisClass::DeactivateWidget);
+	Button_Cancel->OnClicked().RemoveAll(this);
+	Button_Cancel->OnClicked().AddUObject(this, &ThisClass::DeactivateWidget);
 }
 
 void UREPopupWidget::AddSpacer(const int32& SpacerPatternIndex)

@@ -35,7 +35,7 @@ namespace RETag
 		{
 			UE_DECLARE_GAMEPLAY_TAG_EXTERN(AlmostOver);
 		}
-		
+
 		namespace Item
 		{
 			UE_DECLARE_GAMEPLAY_TAG_EXTERN(PickedUp);

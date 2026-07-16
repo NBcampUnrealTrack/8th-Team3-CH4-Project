@@ -22,6 +22,8 @@ public:
 
     virtual void NativeOnDeactivated() override;
 
+    virtual FReply NativeOnPreviewKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
+
 protected:
     // IInitializeUtilityInterface을(를) 통해 상속됨
     void InitializeWidgetByContextObject_Implementation(UObject* ContextObject) override;

@@ -19,12 +19,6 @@ class ROOMESCAPE_API URETextButtonBase : public UCommonButtonBase
 public:
 	virtual void NativePreConstruct() override;
 
-	virtual void NativeOnClicked() override;
-
-public:
-	UPROPERTY(BlueprintAssignable)
-	FOnButtonClickedSignature OnButtonClicked;
-
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<class UTextBlock> TextBlock_ButtonText;

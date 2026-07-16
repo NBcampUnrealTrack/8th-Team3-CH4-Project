@@ -9,24 +9,24 @@
 void UREInventoryEntryWidget::NativeConstruct()
 {
     Super::NativeConstruct();
-
+    SetIsFocusable(true);
 }
 
-void UREInventoryEntryWidget::NativeOnClicked()
+FReply UREInventoryEntryWidget::NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
 {
-    Super::NativeOnClicked();
+    FReply SuperReply = Super::NativeOnMouseButtonDown(InGeometry, InMouseEvent);
 
     // 클릭 이벤트 연결 확인
     if (OnEntryClicked.IsBound() == false)
     {
-        return;
+        return SuperReply;
     }
 
     // 이벤트 실행 및 반환값(FPrimaryAssetId) 유효성 검사
     FPrimaryAssetId DataAssetID = OnEntryClicked.Execute(EntryIndex);
     if (DataAssetID.IsValid() == false)
     {
-        return;
+        return SuperReply;
     }
     // 아이템 스폰 절차 시작
 
@@ -41,7 +41,23 @@ void UREInventoryEntryWidget::NativeOnClicked()
 
     // 비동기 로드 시작
     AsyncLoadHandle = AssetManager.LoadPrimaryAsset(DataAssetID, Bundles, AsyncLoadCallback);
-    return;
+    return FReply::Handled();
+}
+
+void UREInventoryEntryWidget::NativeOnDragDetected(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent, UDragDropOperation*& OutOperation)
+{
+    Super::NativeOnDragDetected(InGeometry, InMouseEvent, OutOperation);
+    
+}
+
+FReply UREInventoryEntryWidget::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
+{
+    Super::NativeOnKeyDown(InGeometry, InKeyEvent);
+
+    FString DebugMessage = FString::Printf(TEXT("Key Pressed -> %s"), *InKeyEvent.GetKey().ToString());
+    GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, DebugMessage);
+
+    return FReply::Handled();
 }
 
 void UREInventoryEntryWidget::SetEntryDataAsset(const FPrimaryAssetId& DataAssetID)
