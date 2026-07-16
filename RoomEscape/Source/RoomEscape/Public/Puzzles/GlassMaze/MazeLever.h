@@ -23,7 +23,12 @@ public:
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+	// 서버 전용 - 미로 리셋 시 매니저가 호출. 시각 상태만 Off로 (벽은 매니저가 직접 닫음)
+	void ResetLeverState();
+
 protected:
+	virtual void BeginPlay() override;
+
 	// 서버에서 실행 (베이스의 ProcessServerInteract가 권한/Active 검증 후 호출)
 	virtual void HandleInteract(AActor* Interactor) override;
 

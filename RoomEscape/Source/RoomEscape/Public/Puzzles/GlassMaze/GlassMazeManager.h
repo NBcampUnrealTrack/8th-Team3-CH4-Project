@@ -7,6 +7,7 @@
 #include "GlassMazeManager.generated.h"
 
 class AGlassWall;
+class AMazeLever;
 class AMazeTrapTile;
 class AREPlayerCharacter;
 
@@ -25,6 +26,9 @@ public:
 	// 개폐 벽이 BeginPlay에서 자기 자신을 등록
 	void RegisterOpenableWall(AGlassWall* Wall);
 
+	// 레버가 BeginPlay에서 자기 자신을 등록
+	void RegisterLever(AMazeLever* Lever);
+
 	// 서버 전용 - 레버가 호출. LeverID가 일치하는 개폐 벽을 모두 bOpen 상태로
 	void SetWallsOpenByLever(FName LeverID, bool bOpen);
 
@@ -37,6 +41,12 @@ public:
 protected:
 	virtual void HandlePuzzleSolved() override;
 
+	// 배드엔딩 재시작(ResetToLocked) 시 개폐 벽 닫기 + 레버 시각 상태 초기화. 서버 전용
+	virtual void HandlePuzzleLocked() override;
+
 	UPROPERTY()
 	TArray<TObjectPtr<AGlassWall>> OpenableWalls;
+
+	UPROPERTY()
+	TArray<TObjectPtr<AMazeLever>> Levers;
 };
