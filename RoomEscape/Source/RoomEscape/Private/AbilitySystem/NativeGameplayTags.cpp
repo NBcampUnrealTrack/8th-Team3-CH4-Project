@@ -68,4 +68,21 @@ namespace RETag
 			UE_DEFINE_GAMEPLAY_TAG(Radio, "State.Holding.Radio");
 		}
 	}
+
+	// --- UI
+	namespace Widget
+	{
+		// 기초 레이아웃 (Root Canvas)
+		UE_DEFINE_GAMEPLAY_TAG(RootLayout, "UI.RootLayout");
+
+		UE_DEFINE_GAMEPLAY_TAG(PrimaryLayer, "UI.Layer.Primary");
+
+		UE_DEFINE_GAMEPLAY_TAG(GameplayLayer, "UI.Layer.Gameplay");
+
+		UE_DEFINE_GAMEPLAY_TAG(OverlayLayer, "UI.Layer.Overlay");
+
+		UE_DEFINE_GAMEPLAY_TAG(PopupLayer, "UI.Layer.Popup");
+
+		UE_DEFINE_GAMEPLAY_TAG(VisualEffectLayer, "UI.Layer.VisualEffect");
+	}
 }

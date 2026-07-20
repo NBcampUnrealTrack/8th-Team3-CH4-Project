@@ -1,4 +1,4 @@
-#include "UI/REDialLockWidget.h"
+﻿#include "UI/REDialLockWidget.h"
 
 #include "Blueprint/WidgetTree.h"
 #include "Components/Button.h"
@@ -9,20 +9,33 @@
 #include "Puzzles/LockAndGlow/REDialLockDevice.h"
 #include "Puzzles/LockAndGlow/RELockAndGlowClueManager.h"
 #include "Sound/SoundBase.h"
+#include "CommonButtonBase.h"
 
 void UREDialLockWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
+}
+
+void UREDialLockWidget::NativeOnActivated()
+{
+	Super::NativeOnActivated();
+
 	ResolveWidgets();
 	BindButtonEvents();
 }
 
-void UREDialLockWidget::NativeDestruct()
+void UREDialLockWidget::NativeOnDeactivated()
 {
 	ClearCloseTimer();
 	UnbindDeviceEvents();
 	RestoreInput();
 	LockDevice = nullptr;
+
+	Super::NativeOnDeactivated();
+}
+
+void UREDialLockWidget::NativeDestruct()
+{
 	Super::NativeDestruct();
 }
 
@@ -83,10 +96,11 @@ void UREDialLockWidget::CloseDialLock()
 {
 	ClearCloseTimer();
 	RestoreInput();
-	if (IsInViewport() == true)
-	{
-		RemoveFromParent();
-	}
+	DeactivateWidget();
+	//if (IsInViewport() == true)
+	//{
+	//	RemoveFromParent();
+	//}
 }
 
 AREDialLockDevice* UREDialLockWidget::GetLockDevice() const
@@ -234,11 +248,11 @@ void UREDialLockWidget::ResolveWidgets()
 
 	if (IsValid(BTN_Submit) == false)
 	{
-		BTN_Submit = Cast<UButton>(WidgetTree->FindWidget(TEXT("BTN_Submit")));
+		BTN_Submit = Cast<UCommonButtonBase>(WidgetTree->FindWidget(TEXT("BTN_Submit")));
 	}
 	if (IsValid(BTN_Close) == false)
 	{
-		BTN_Close = Cast<UButton>(WidgetTree->FindWidget(TEXT("BTN_Close")));
+		BTN_Close = Cast<UCommonButtonBase>(WidgetTree->FindWidget(TEXT("BTN_Close")));
 	}
 }
 
@@ -288,13 +302,13 @@ void UREDialLockWidget::BindButtonEvents()
 
 	if (IsValid(BTN_Submit) == true)
 	{
-		BTN_Submit->OnClicked.RemoveAll(this);
-		BTN_Submit->OnClicked.AddDynamic(this, &UREDialLockWidget::HandleSubmitClicked);
+		BTN_Submit->OnClicked().RemoveAll(this);
+		BTN_Submit->OnClicked().AddUObject(this, &UREDialLockWidget::HandleSubmitClicked);
 	}
 	if (IsValid(BTN_Close) == true)
 	{
-		BTN_Close->OnClicked.RemoveAll(this);
-		BTN_Close->OnClicked.AddDynamic(this, &UREDialLockWidget::HandleCloseClicked);
+		BTN_Close->OnClicked().RemoveAll(this);
+		BTN_Close->OnClicked().AddUObject(this, &UREDialLockWidget::HandleCloseClicked);
 	}
 }
 

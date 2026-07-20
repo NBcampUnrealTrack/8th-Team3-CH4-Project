@@ -1,4 +1,4 @@
-#include "Puzzles/MirrorRoom/REMirrorInputPanel.h"
+﻿#include "Puzzles/MirrorRoom/REMirrorInputPanel.h"
 #include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "GameFramework/Pawn.h"
@@ -6,6 +6,8 @@
 #include "Puzzles/MirrorRoom/REMirrorRoomManager.h"
 #include "Puzzles/MirrorRoom/REMirrorPuzzleData.h"
 #include "UI/REMirrorInputWidget.h"
+#include "UI/LocalWidgetManager.h"
+#include "UI/RERootCanvasWidget.h"
 
 AREMirrorInputPanel::AREMirrorInputPanel()
 {
@@ -32,8 +34,9 @@ void AREMirrorInputPanel::CloseInputWidget()
 {
 	if (IsValid(ActiveInputWidget) == true)
 	{
-		ActiveInputWidget->RemoveFromParent();
-		ActiveInputWidget = nullptr;
+		//ActiveInputWidget->RemoveFromParent();
+		//ActiveInputWidget = nullptr;
+		ActiveInputWidget->DeactivateWidget();
 	}
 }
 
@@ -158,9 +161,22 @@ void AREMirrorInputPanel::OpenInputWidgetLocal(APlayerController* PlayerControll
 		return;
 	}
 
+	ULocalWidgetManager* WidgetManager = ULocalWidgetManager::GetInstance(this);
+	if (IsValid(WidgetManager) == false)
+	{
+		return;
+	}
+
+	URERootCanvasWidget* RootCanvas = Cast<URERootCanvasWidget>(WidgetManager->GetRootWidget());
+	if (IsValid(RootCanvas) == false)
+	{
+		return;
+	}
+
+	ActiveInputWidget = Cast<UREMirrorInputWidget>(RootCanvas->ShowGameplayWidget(InWidgetClass));
 	if (IsValid(ActiveInputWidget) == false || ActiveInputWidget->GetClass() != InWidgetClass)
 	{
-		ActiveInputWidget = CreateWidget<UREMirrorInputWidget>(PlayerController, InWidgetClass);
+		//ActiveInputWidget = CreateWidget<UREMirrorInputWidget>(PlayerController, InWidgetClass);
 	}
 
 	if (IsValid(ActiveInputWidget) == false)
@@ -168,10 +184,10 @@ void AREMirrorInputPanel::OpenInputWidgetLocal(APlayerController* PlayerControll
 		return;
 	}
 
-	if (ActiveInputWidget->IsInViewport() == false)
-	{
-		ActiveInputWidget->AddToViewport(100);
-	}
+	//if (ActiveInputWidget->IsInViewport() == false)
+	//{
+	//	ActiveInputWidget->AddToViewport(100);
+	//}
 
 	ActiveInputWidget->InitializeInputPanel(this, InPanelTitle);
 }

@@ -81,4 +81,21 @@ namespace RETag
 			UE_DECLARE_GAMEPLAY_TAG_EXTERN(Radio);	
 		}
 	}
+
+	// --- UI
+	namespace Widget
+	{
+		// 기초 레이아웃 (Root Canvas)
+		UE_DECLARE_GAMEPLAY_TAG_EXTERN(RootLayout);
+
+		UE_DECLARE_GAMEPLAY_TAG_EXTERN(PrimaryLayer);
+
+		UE_DECLARE_GAMEPLAY_TAG_EXTERN(GameplayLayer);
+
+		UE_DECLARE_GAMEPLAY_TAG_EXTERN(OverlayLayer);
+
+		UE_DECLARE_GAMEPLAY_TAG_EXTERN(PopupLayer);
+
+		UE_DECLARE_GAMEPLAY_TAG_EXTERN(VisualEffectLayer);
+	}
 }

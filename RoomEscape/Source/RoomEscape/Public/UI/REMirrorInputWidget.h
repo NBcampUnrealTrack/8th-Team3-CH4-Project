@@ -1,7 +1,7 @@
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
-#include "Blueprint/UserWidget.h"
+#include "CommonActivatableWidget.h"
 #include "Puzzles/MirrorRoom/REMirrorRoomTypes.h"
 #include "REMirrorInputWidget.generated.h"
 
@@ -9,14 +9,20 @@ class UButton;
 class UTextBlock;
 class AREMirrorInputPanel;
 class AREMirrorRoomManager;
+class UCommonButtonBase;
 
 UCLASS(Blueprintable)
-class ROOMESCAPE_API UREMirrorInputWidget : public UUserWidget
+class ROOMESCAPE_API UREMirrorInputWidget : public UCommonActivatableWidget
 {
 	GENERATED_BODY()
 
 public:
 	virtual void NativeConstruct() override;
+
+	virtual void NativeOnActivated() override;
+
+	virtual void NativeOnDeactivated() override;
+
 	virtual void NativeDestruct() override;
 
 protected:
@@ -36,10 +42,10 @@ protected:
 	TObjectPtr<UTextBlock> TXT_InputOptions;
 
 	UPROPERTY(meta = (BindWidgetOptional), BlueprintReadOnly, Category = "Mirror Input")
-	TObjectPtr<UButton> BTN_Close;
+	TObjectPtr<UCommonButtonBase> BTN_Close;
 
 	UPROPERTY(meta = (BindWidgetOptional), BlueprintReadOnly, Category = "Mirror Input")
-	TObjectPtr<UButton> BTN_Reset;
+	TObjectPtr<UCommonButtonBase> BTN_Reset;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Mirror Input", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<AREMirrorInputPanel> InputPanel;
