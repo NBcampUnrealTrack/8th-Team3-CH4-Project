@@ -2,7 +2,7 @@
 
 
 #include "UI/RETextButtonBase.h"
-#include "Components/TextBlock.h"
+#include "CommonTextBlock.h"
 
 void URETextButtonBase::NativePreConstruct()
 {
@@ -10,6 +10,16 @@ void URETextButtonBase::NativePreConstruct()
 	if (IsValid(TextBlock_ButtonText) == true)
 	{
 		TextBlock_ButtonText->SetText(ButtonText);
+	}
+}
+
+void URETextButtonBase::NativeOnCurrentTextStyleChanged()
+{
+	Super::NativeOnCurrentTextStyleChanged();
+	
+	if (IsValid(TextBlock_ButtonText) == true)
+	{
+		TextBlock_ButtonText->SetStyle(GetCurrentTextStyleClass());
 	}
 }
 
