@@ -66,6 +66,10 @@ void UGameplayBaseWidget::OnCloseButtonClicked()
 		if (IsValid(ActivatedContentWidget) == true)
 		{
 			ActivatedContentWidget->DeactivateWidget();
+		}
+
+		if (WidgetStack_Contents->GetNumWidgets() > 1)
+		{
 			return;
 		}
 	}
