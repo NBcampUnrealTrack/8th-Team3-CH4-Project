@@ -62,14 +62,15 @@ void UChattingComponent::InitWidget_Implementation()
 		return;
 	}
 
-	//OverlayLayer->AddWidget(ChattingWidgetClass);
-
-	// Widget 생성 및 유효성 확인
-	UChatBoxWidget* ChattingWidget = WidgetManager->AddWidget<UChatBoxWidget>(FName("Chatting"), ChattingWidgetClass);
+	// Widget 생성 및 유효성 확인 (Overlay Layer에 생성)
+	UChatBoxWidget* ChattingWidget = Cast<UChatBoxWidget>(OverlayLayer->AddWidget(ChattingWidgetClass));
 	if (IsValid(ChattingWidget) == false)
 	{
 		return;
 	}
+
+	// Widget Manager에 Widget 등록
+	WidgetManager->AddWidgetInstance(FName("Chatting"), ChattingWidget);
 
 	// Widget 초기화
 	IInitializeUtilityInterface::Execute_InitializeWidgetByComponent(ChattingWidget, this);
@@ -77,11 +78,6 @@ void UChattingComponent::InitWidget_Implementation()
 	// 채팅 전송 이벤트 연결
 	ChattingWidget->OnMessageCommitted.AddDynamic(this, &UChattingComponent::ServerOnMessageCommitted);
 
-	/*
-	* HUD Widget 구현 후 ChattingWidget을 HUD Widget의 Child로 추가하도록 수정 필요
-	*/
-	UE_LOG(LogTemp, Warning, TEXT("# ChattingWidget을 HUD Widget의 Child로 추가하도록 수정 필요"));
-	ChattingWidget->AddToPlayerScreen();
 }
 
 void UChattingComponent::ServerOnMessageCommitted_Implementation(const FGameplayTag& ChannelTag, const FString& Message)
