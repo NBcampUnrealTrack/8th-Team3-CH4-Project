@@ -9,6 +9,7 @@
 #include "UI/LocalWidgetManager.h"
 #include "UI/RERootCanvasWidget.h"
 #include "UI/RESessionRoomWidget.h"
+#include "Game/REGameInstance.h"
 
 // Sets default values for this component's properties
 URESessionPlayerStateComponent::URESessionPlayerStateComponent()
@@ -394,6 +395,13 @@ bool URESessionPlayerStateComponent::StartOpenGameMap(TSoftObjectPtr<UWorld> Map
 
 	// 중복 이동 요청 방지 플래그를 설정합니다.
 	bIsTravelRequested = true;
+
+	// 트래블로 PlayerState가 파괴되기 전에, 호스트의 역할 선택을 GameInstance에 보존
+	// (이 함수는 호스트 자신의 컴포넌트에서만 실행되므로 SpawnRoomType == 호스트의 선택)
+	if (UREGameInstance* GameInstance = World->GetGameInstance<UREGameInstance>())
+	{
+		GameInstance->SetHostSpawnRoomType(SpawnRoomType);
+	}
 
 	// Client에서 Map Load를 위하여 문자열 추가
 	GameMapPackageName = GameMapPackageName.Append(TEXT("?listen"));

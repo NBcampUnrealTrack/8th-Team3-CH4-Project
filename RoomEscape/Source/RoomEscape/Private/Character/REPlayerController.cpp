@@ -46,6 +46,15 @@ void AREPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (IsLocalController() == false)
+	{
+		return;
+	}
+
+	// 메뉴(UIOnly+커서)에서 트래블해 들어온 경우 뷰포트에 남은 입력모드를 게임 모드로 복원
+	SetInputMode(FInputModeGameOnly());
+	SetShowMouseCursor(false);
+
 	if (ULocalPlayer* LP = GetLocalPlayer())
 	{
 		UEnhancedInputLocalPlayerSubsystem* Subsystem = LP->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>();

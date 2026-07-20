@@ -7,6 +7,7 @@
 #include "Puzzles/Framework/REPuzzleResetPoint.h"
 #include "Puzzles/BombDefusal/REBombDefusalManager.h"
 #include "Game/RENotifySubsystem.h"
+#include "Game/REGameInstance.h"
 #include "AbilitySystem/NativeGameplayTags.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/Pawn.h"
@@ -38,6 +39,17 @@ void AREProgressionManager::BeginPlay()
 	if (HasAuthority() == false)
 	{
 		return;
+	}
+
+	// 로비에서 역할을 선택하고 들어온 경우 에디터 기본값 대신 실제 선택을 반영
+	if (const UREGameInstance* GameInstance = GetGameInstance<UREGameInstance>())
+	{
+		if (GameInstance->GetHostSpawnRoomType() != ERESpawnRoomType::None)
+		{
+			bHostIsPlayerA = GameInstance->IsHostPlayerA();
+			NotifyProgress(RETag::Event::Progress::StageChanged.GetTag(),
+				FString::Printf(TEXT("역할 반영: 호스트 = Player %s"), bHostIsPlayerA ? TEXT("A") : TEXT("B")));
+		}
 	}
 
 	// 테스트 레벨용: 2부부터 시작하도록 지정된 경우 (탈출 퍼즐 활성화는 레벨 인스턴스의 bStartActive에 맡김)

@@ -4,6 +4,7 @@
 #include "Engine/GameInstance.h"
 #include "Engine/DataTable.h"
 #include "Interfaces/OnlineSessionInterface.h"
+#include "Components/RESessionPlayerStateComponent.h"
 #include "REGameInstance.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnJoinProcessResult, bool, bSuccess, const FString&, Message);
@@ -30,6 +31,15 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Network")
 	FOnJoinProcessResult OnJoinProcessResult;
 	
+	// 로비에서 확정된 호스트의 역할. None이면 로비를 거치지 않은 실행(테스트 레벨)
+	UFUNCTION(BlueprintPure, Category = "Session Room")
+	FORCEINLINE ERESpawnRoomType GetHostSpawnRoomType() const { return HostSpawnRoomType; }
+
+	void SetHostSpawnRoomType(ERESpawnRoomType InRoomType) { HostSpawnRoomType = InRoomType; }
+
+	// Alpha = Player A(지하 진입자) 매핑. None이면 기본값 true(기존 동작 유지)
+	bool IsHostPlayerA() const { return HostSpawnRoomType != ERESpawnRoomType::Beta; }
+
 	UFUNCTION(BlueprintPure, Category = "Item")
 	FORCEINLINE UDataTable* GetItemDataTable() const { return ItemDataTable; }
 
@@ -39,6 +49,8 @@ public:
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item", meta = (AllowPrivateAccess = "true", RequiredAssetDataTags = "RowStructure=/Script/RoomEscape.REItemDataRow"))
 	TObjectPtr<UDataTable> ItemDataTable;
+
+	ERESpawnRoomType HostSpawnRoomType = ERESpawnRoomType::None;
 
 	TWeakPtr<IOnlineSession> SessionInterface;
 	TSharedPtr<class FOnlineSessionSearch> SessionSearch;
