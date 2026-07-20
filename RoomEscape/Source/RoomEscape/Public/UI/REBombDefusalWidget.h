@@ -1,7 +1,7 @@
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
-#include "Blueprint/UserWidget.h"
+#include "CommonActivatableWidget.h"
 #include "Puzzles/Framework/REPuzzleTypes.h"
 #include "TimerManager.h"
 #include "REBombDefusalWidget.generated.h"
@@ -27,12 +27,17 @@ class AREBombDefusalManager;
  * to RequestCutWire / RequestToggleButton.
  */
 UCLASS(Blueprintable)
-class ROOMESCAPE_API UREBombDefusalWidget : public UUserWidget
+class ROOMESCAPE_API UREBombDefusalWidget : public UCommonActivatableWidget
 {
 	GENERATED_BODY()
 
 public:
 	virtual void NativeConstruct() override;
+
+	virtual void NativeOnActivated() override;
+
+	virtual void NativeOnDeactivated() override;
+
 	virtual void NativeDestruct() override;
 
 protected:

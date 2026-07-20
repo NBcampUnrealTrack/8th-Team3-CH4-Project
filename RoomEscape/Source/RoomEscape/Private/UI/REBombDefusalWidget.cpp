@@ -1,4 +1,4 @@
-#include "UI/REBombDefusalWidget.h"
+﻿#include "UI/REBombDefusalWidget.h"
 
 #include "Blueprint/WidgetTree.h"
 #include "Components/Button.h"
@@ -14,11 +14,19 @@
 void UREBombDefusalWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
+	//ResolveWidgets();
+	//BindCloseButton();
+}
+
+void UREBombDefusalWidget::NativeOnActivated()
+{
+	Super::NativeOnActivated();
+
 	ResolveWidgets();
 	BindCloseButton();
 }
 
-void UREBombDefusalWidget::NativeDestruct()
+void UREBombDefusalWidget::NativeOnDeactivated()
 {
 	ClearSolvedCloseTimer();
 	EndActionRequest();
@@ -28,6 +36,20 @@ void UREBombDefusalWidget::NativeDestruct()
 	bFailurePresentationActive = false;
 	bFailureResultDelivered = false;
 	BombManager = nullptr;
+
+	Super::NativeOnDeactivated();
+}
+
+void UREBombDefusalWidget::NativeDestruct()
+{
+	//ClearSolvedCloseTimer();
+	//EndActionRequest();
+	//UnbindManagerEvents();
+	//RestoreInput();
+	//ActionEntries.Reset();
+	//bFailurePresentationActive = false;
+	//bFailureResultDelivered = false;
+	//BombManager = nullptr;
 	Super::NativeDestruct();
 }
 
