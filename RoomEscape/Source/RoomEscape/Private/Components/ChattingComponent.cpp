@@ -78,6 +78,21 @@ void UChattingComponent::InitWidget_Implementation()
 	// 채팅 전송 이벤트 연결
 	ChattingWidgetInstance->OnMessageCommitted.AddDynamic(this, &UChattingComponent::ServerOnMessageCommitted);
 
+	//// 채팅 전송 시 InputMode 변경 함수 연결
+	//ChattingWidgetInstance->OnMessageCommitted.AddDynamic(this, &UChattingComponent::SetInputModeGameOnly);
+
+}
+
+void UChattingComponent::SetInputModeGameOnly()
+{
+	// Local Client 확인
+	if (IsValid(OwnerController) == false || OwnerController->IsLocalController() == false)
+	{
+		return;
+	}
+
+	OwnerController->SetInputMode(FInputModeGameOnly());
+	OwnerController->SetShowMouseCursor(false);
 }
 
 void UChattingComponent::ServerOnMessageCommitted_Implementation(const FGameplayTag& ChannelTag, const FString& Message)

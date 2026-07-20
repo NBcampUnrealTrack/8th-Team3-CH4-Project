@@ -53,4 +53,7 @@ protected:
 	// (Server 호출, Client 실행) 메시지를 전송하는 함수
 	UFUNCTION(Client, Reliable, BlueprintCallable)
 	void ClientOnMessageReceived(const struct FGameplayTag& ChannelTag, const FString& Sender, const FString& Message);
+
+	UFUNCTION()
+	void SetInputModeGameOnly();
 };
