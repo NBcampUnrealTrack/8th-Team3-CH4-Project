@@ -275,8 +275,9 @@ void AREBombDefusalManager::CloseBombDefusalWidget()
 {
 	if (IsValid(ActiveBombDefusalWidget) == true)
 	{
-		ActiveBombDefusalWidget->RemoveFromParent();
-		ActiveBombDefusalWidget = nullptr;
+		//ActiveBombDefusalWidget->RemoveFromParent();
+		//ActiveBombDefusalWidget = nullptr;
+		ActiveBombDefusalWidget->DeactivateWidget();
 	}
 
 	SynchronizePromptCandidatesFromCurrentOverlaps();

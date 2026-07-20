@@ -223,10 +223,11 @@ void UREBombDefusalWidget::CloseBombDefusal()
 	}
 
 	RestoreInput();
-	if (IsInViewport() == true)
-	{
-		RemoveFromParent();
-	}
+	DeactivateWidget();
+	//if (IsInViewport() == true)
+	//{
+	//	RemoveFromParent();
+	//}
 }
 
 AREBombDefusalManager* UREBombDefusalWidget::GetBombManager() const
