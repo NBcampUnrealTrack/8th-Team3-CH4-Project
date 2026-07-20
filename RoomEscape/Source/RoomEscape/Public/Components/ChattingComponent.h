@@ -42,6 +42,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<class UChatBoxWidget> ChattingWidgetClass;
 
+	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UChatBoxWidget> ChattingWidgetInstance;
+
 protected:
 	// (Client 호출, Server 실행) 메시지를 전송하는 함수
 	UFUNCTION(Server, Reliable, BlueprintCallable)

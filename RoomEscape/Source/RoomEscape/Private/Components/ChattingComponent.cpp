@@ -63,20 +63,20 @@ void UChattingComponent::InitWidget_Implementation()
 	}
 
 	// Widget 생성 및 유효성 확인 (Overlay Layer에 생성)
-	UChatBoxWidget* ChattingWidget = Cast<UChatBoxWidget>(OverlayLayer->AddWidget(ChattingWidgetClass));
-	if (IsValid(ChattingWidget) == false)
+	ChattingWidgetInstance = Cast<UChatBoxWidget>(OverlayLayer->AddWidget(ChattingWidgetClass));
+	if (IsValid(ChattingWidgetInstance) == false)
 	{
 		return;
 	}
 
 	// Widget Manager에 Widget 등록
-	WidgetManager->AddWidgetInstance(FName("Chatting"), ChattingWidget);
+	WidgetManager->AddWidgetInstance(FName("Chatting"), ChattingWidgetInstance);
 
 	// Widget 초기화
-	IInitializeUtilityInterface::Execute_InitializeWidgetByComponent(ChattingWidget, this);
+	IInitializeUtilityInterface::Execute_InitializeWidgetByComponent(ChattingWidgetInstance, this);
 	
 	// 채팅 전송 이벤트 연결
-	ChattingWidget->OnMessageCommitted.AddDynamic(this, &UChattingComponent::ServerOnMessageCommitted);
+	ChattingWidgetInstance->OnMessageCommitted.AddDynamic(this, &UChattingComponent::ServerOnMessageCommitted);
 
 }
 
