@@ -1,4 +1,4 @@
-#include "UI/REMirrorInputWidget.h"
+﻿#include "UI/REMirrorInputWidget.h"
 #include "Blueprint/WidgetTree.h"
 #include "Components/Button.h"
 #include "Components/TextBlock.h"
@@ -7,31 +7,43 @@
 #include "Puzzles/MirrorRoom/REMirrorInputPanel.h"
 #include "Puzzles/MirrorRoom/REMirrorPuzzleData.h"
 #include "Puzzles/MirrorRoom/REMirrorRoomManager.h"
+#include "CommonButtonBase.h"
 
 void UREMirrorInputWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
+}
+
+void UREMirrorInputWidget::NativeOnActivated()
+{
+
+	Super::NativeOnActivated();
 	FindOptionalWidgets();
 
 	if (IsValid(BTN_Close) == true)
 	{
-		BTN_Close->OnClicked.RemoveAll(this);
-		BTN_Close->OnClicked.AddDynamic(this, &UREMirrorInputWidget::HandleCloseClicked);
+		BTN_Close->OnClicked().RemoveAll(this);
+		BTN_Close->OnClicked().AddUObject(this, &UREMirrorInputWidget::HandleCloseClicked);
 	}
 
 	if (IsValid(BTN_Reset) == true)
 	{
-		BTN_Reset->OnClicked.RemoveAll(this);
-		BTN_Reset->OnClicked.AddDynamic(this, &UREMirrorInputWidget::HandleResetClicked);
+		BTN_Reset->OnClicked().RemoveAll(this);
+		BTN_Reset->OnClicked().AddUObject(this, &UREMirrorInputWidget::HandleResetClicked);
 	}
 
 	BindOptionButtons();
 }
 
-void UREMirrorInputWidget::NativeDestruct()
+void UREMirrorInputWidget::NativeOnDeactivated()
 {
 	RestoreInput();
 	InputPanel = nullptr;
+	Super::NativeOnDeactivated();
+}
+
+void UREMirrorInputWidget::NativeDestruct()
+{
 	Super::NativeDestruct();
 }
 
@@ -101,10 +113,11 @@ void UREMirrorInputWidget::RequestInputReset()
 void UREMirrorInputWidget::CloseInputPanel()
 {
 	RestoreInput();
-	if (IsInViewport() == true)
-	{
-		RemoveFromParent();
-	}
+	DeactivateWidget();
+	//if (IsInViewport() == true)
+	//{
+	//	RemoveFromParent();
+	//}
 }
 
 void UREMirrorInputWidget::ApplyInputResult(const FREMirrorInputResult& Result)
@@ -242,11 +255,11 @@ void UREMirrorInputWidget::FindOptionalWidgets()
 	}
 	if (IsValid(BTN_Close) == false)
 	{
-		BTN_Close = Cast<UButton>(WidgetTree->FindWidget(TEXT("BTN_Close")));
+		BTN_Close = Cast<UCommonButtonBase>(WidgetTree->FindWidget(TEXT("BTN_Close")));
 	}
 	if (IsValid(BTN_Reset) == false)
 	{
-		BTN_Reset = Cast<UButton>(WidgetTree->FindWidget(TEXT("BTN_Reset")));
+		BTN_Reset = Cast<UCommonButtonBase>(WidgetTree->FindWidget(TEXT("BTN_Reset")));
 	}
 }
 

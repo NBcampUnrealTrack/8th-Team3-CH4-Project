@@ -1,4 +1,4 @@
-#include "Puzzles/LockAndGlow/REDialLockDevice.h"
+﻿#include "Puzzles/LockAndGlow/REDialLockDevice.h"
 #include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "GameFramework/Pawn.h"
@@ -6,6 +6,9 @@
 #include "Net/UnrealNetwork.h"
 #include "Puzzles/LockAndGlow/RELockAndGlowClueManager.h"
 #include "UI/REDialLockWidget.h"
+#include "UI/LocalWidgetManager.h"
+#include "UI/RERootCanvasWidget.h"
+#include "Widgets/CommonActivatableWidgetContainer.h"
 
 AREDialLockDevice::AREDialLockDevice()
 {
@@ -134,10 +137,26 @@ void AREDialLockDevice::ServerSubmitCode_Implementation(AActor* Interactor)
 
 void AREDialLockDevice::CloseDialLockWidget()
 {
+	//ULocalWidgetManager* WidgetManager = ULocalWidgetManager::GetInstance(this);
+	//if (IsValid(WidgetManager) == false)
+	//{
+	//	return;
+	//}
+
+	//URERootCanvasWidget* RootCanvas = Cast<URERootCanvasWidget>(WidgetManager->GetRootWidget());
+	//if (IsValid(RootCanvas) == false)
+	//{
+	//	return;
+	//}
+
+	//UCommonActivatableWidgetStack* GameplayLayer = RootCanvas->GetGameplayWidgetStack();
+	//GameplayLayer->GetActiveWidget()->DeactivateWidget();
+
 	if (IsValid(ActiveDialLockWidget) == true)
 	{
-		ActiveDialLockWidget->RemoveFromParent();
-		ActiveDialLockWidget = nullptr;
+		//ActiveDialLockWidget->RemoveFromParent();
+		//ActiveDialLockWidget = nullptr;
+		ActiveDialLockWidget->DeactivateWidget();
 	}
 }
 
@@ -244,9 +263,22 @@ void AREDialLockDevice::OpenDialLockWidgetLocal(APlayerController* PlayerControl
 		return;
 	}
 
+	ULocalWidgetManager* WidgetManager = ULocalWidgetManager::GetInstance(this);
+	if (IsValid(WidgetManager) == false)
+	{
+		return;
+	}
+
+	URERootCanvasWidget* RootCanvas = Cast<URERootCanvasWidget>(WidgetManager->GetRootWidget());
+	if (IsValid(RootCanvas) == false)
+	{
+		return;
+	}
+
+	ActiveDialLockWidget = Cast<UREDialLockWidget>(RootCanvas->ShowGameplayWidget(InWidgetClass));
 	if (IsValid(ActiveDialLockWidget) == false || ActiveDialLockWidget->GetClass() != InWidgetClass)
 	{
-		ActiveDialLockWidget = CreateWidget<UREDialLockWidget>(PlayerController, InWidgetClass);
+		//ActiveDialLockWidget = CreateWidget<UREDialLockWidget>(PlayerController, InWidgetClass);
 	}
 
 	if (IsValid(ActiveDialLockWidget) == false)
@@ -255,10 +287,10 @@ void AREDialLockDevice::OpenDialLockWidgetLocal(APlayerController* PlayerControl
 		return;
 	}
 
-	if (ActiveDialLockWidget->IsInViewport() == false)
-	{
-		ActiveDialLockWidget->AddToViewport(100);
-	}
+	//if (ActiveDialLockWidget->IsInViewport() == false)
+	//{
+	//	ActiveDialLockWidget->AddToViewport(100);
+	//}
 
 	ActiveDialLockWidget->InitializeDialLock(this, InitialDigits);
 }

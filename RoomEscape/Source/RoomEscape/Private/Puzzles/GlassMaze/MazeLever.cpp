@@ -20,6 +20,27 @@ void AMazeLever::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifeti
 	DOREPLIFETIME(AMazeLever, bIsOn);
 }
 
+void AMazeLever::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (AGlassMazeManager* MazeManager = Cast<AGlassMazeManager>(GetPuzzleManager()))
+	{
+		MazeManager->RegisterLever(this);
+	}
+}
+
+void AMazeLever::ResetLeverState()
+{
+	if (HasAuthority() == false || bIsOn == false)
+	{
+		return;
+	}
+
+	bIsOn = false;
+	OnRep_IsOn();	// 리슨 서버 호스트
+}
+
 void AMazeLever::HandleInteract(AActor* Interactor)
 {
 	Super::HandleInteract(Interactor);

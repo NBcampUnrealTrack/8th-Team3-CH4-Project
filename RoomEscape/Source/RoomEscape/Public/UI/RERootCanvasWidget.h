@@ -63,6 +63,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE UCommonActivatableWidgetStack* GetVisualEffectWidgetStack() const { return VisualEffectLayer; }
 
+	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent)
+	UCommonActivatableWidget* ShowGameplayWidget(TSubclassOf<UCommonActivatableWidget> PuzzleWidgetClass);
+
 protected:
 	UFUNCTION(BlueprintCallable)
 	void HideLayerWhenPopup();

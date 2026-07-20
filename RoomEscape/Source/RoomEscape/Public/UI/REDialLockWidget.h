@@ -1,7 +1,7 @@
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
-#include "Blueprint/UserWidget.h"
+#include "CommonActivatableWidget.h"
 #include "TimerManager.h"
 #include "REDialLockWidget.generated.h"
 
@@ -10,14 +10,20 @@ class UTextBlock;
 class USoundBase;
 class AREDialLockDevice;
 class ARELockAndGlowClueManager;
+class UCommonButtonBase;
 
 UCLASS(Blueprintable)
-class ROOMESCAPE_API UREDialLockWidget : public UUserWidget
+class ROOMESCAPE_API UREDialLockWidget : public UCommonActivatableWidget
 {
 	GENERATED_BODY()
 
 public:
 	virtual void NativeConstruct() override;
+
+	virtual void NativeOnActivated() override;
+
+	virtual void NativeOnDeactivated() override;
+
 	virtual void NativeDestruct() override;
 
 protected:
@@ -61,10 +67,10 @@ protected:
 	TObjectPtr<UButton> BTN_Digit3Down;
 
 	UPROPERTY(meta = (BindWidgetOptional), BlueprintReadOnly, Category = "Dial Lock")
-	TObjectPtr<UButton> BTN_Submit;
+	TObjectPtr<UCommonButtonBase> BTN_Submit;
 
 	UPROPERTY(meta = (BindWidgetOptional), BlueprintReadOnly, Category = "Dial Lock")
-	TObjectPtr<UButton> BTN_Close;
+	TObjectPtr<UCommonButtonBase> BTN_Close;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Dial Lock|Sound", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USoundBase> DigitUpSound;

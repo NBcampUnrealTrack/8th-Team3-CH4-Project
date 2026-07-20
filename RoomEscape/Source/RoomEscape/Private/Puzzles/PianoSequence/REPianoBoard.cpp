@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Puzzles/PianoSequence/REPianoBoard.h"
 #include "Puzzles/PianoSequence/REPianoSequenceManager.h"
@@ -10,6 +10,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "Game/RENotifySubsystem.h"
 #include "AbilitySystem/NativeGameplayTags.h"
+#include "UI/LocalWidgetManager.h"
+#include "UI/RERootCanvasWidget.h"
 
 AREPianoBoard::AREPianoBoard()
 {
@@ -112,10 +114,23 @@ void AREPianoBoard::OpenPianoWidgetLocal(APlayerController* PlayerController)
 		return;
 	}
 
-	if (IsValid(ActivePianoWidget) == false)
+	ULocalWidgetManager* WidgetManager = ULocalWidgetManager::GetInstance(this);
+	if (IsValid(WidgetManager) == false)
 	{
-		ActivePianoWidget = CreateWidget<UREPianoBoardWidget>(PlayerController, PianoWidgetClass);
+		return;
 	}
+
+	URERootCanvasWidget* RootCanvas = Cast<URERootCanvasWidget>(WidgetManager->GetRootWidget());
+	if (IsValid(RootCanvas) == false)
+	{
+		return;
+	}
+
+	ActivePianoWidget = Cast<UREPianoBoardWidget>(RootCanvas->ShowGameplayWidget(PianoWidgetClass));
+	//if (IsValid(ActivePianoWidget) == false)
+	//{
+	//	ActivePianoWidget = CreateWidget<UREPianoBoardWidget>(PlayerController, PianoWidgetClass);
+	//}
 
 	if (IsValid(ActivePianoWidget) == false)
 	{
@@ -124,10 +139,10 @@ void AREPianoBoard::OpenPianoWidgetLocal(APlayerController* PlayerController)
 
 	ActivePianoWidget->InitializeBoard(this);
 
-	if (ActivePianoWidget->IsInViewport() == false)
-	{
-		ActivePianoWidget->AddToViewport();
-	}
+	//if (ActivePianoWidget->IsInViewport() == false)
+	//{
+	//	ActivePianoWidget->AddToViewport();
+	//}
 }
 
 void AREPianoBoard::RequestSubmitKeySlot(int32 SlotIndex)

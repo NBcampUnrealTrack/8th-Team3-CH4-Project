@@ -7,7 +7,9 @@
 #include "Character/REPlayerCharacter.h"
 #include "Game/RENotifySubsystem.h"
 #include "Puzzles/GlassMaze/GlassWall.h"
+#include "Puzzles/GlassMaze/MazeLever.h"
 #include "Puzzles/GlassMaze/MazeTrapTile.h"
+#include "RoomEscape.h"
 
 void AGlassMazeManager::HandlePuzzleSolved()
 {
@@ -21,11 +23,41 @@ void AGlassMazeManager::HandlePuzzleSolved()
 	}
 }
 
+void AGlassMazeManager::HandlePuzzleLocked()
+{
+	Super::HandlePuzzleLocked();
+
+	// ResetToLocked 경로 = 서버에서만 호출됨. 진행 매니저가 텔레포트 후에 리셋하므로 벽에 플레이어가 겹칠 일은 없음
+	for (AGlassWall* Wall : OpenableWalls)
+	{
+		if (Wall && Wall->IsOpen() && Wall->SetOpen(false) == false)
+		{
+			UE_LOG(LogREEvent, Warning, TEXT("[GlassMaze] %s 닫기 실패(플레이어 겹침) - 리셋 후에도 열린 상태로 남음"), *Wall->GetName());
+		}
+	}
+
+	for (AMazeLever* Lever : Levers)
+	{
+		if (Lever)
+		{
+			Lever->ResetLeverState();
+		}
+	}
+}
+
 void AGlassMazeManager::RegisterOpenableWall(AGlassWall* Wall)
 {
 	if (Wall)
 	{
 		OpenableWalls.AddUnique(Wall);
+	}
+}
+
+void AGlassMazeManager::RegisterLever(AMazeLever* Lever)
+{
+	if (Lever)
+	{
+		Levers.AddUnique(Lever);
 	}
 }
 
