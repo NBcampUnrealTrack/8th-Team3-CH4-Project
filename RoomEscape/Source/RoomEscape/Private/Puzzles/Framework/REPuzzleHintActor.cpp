@@ -1,4 +1,4 @@
-#include "Puzzles/Framework/REPuzzleHintActor.h"
+﻿#include "Puzzles/Framework/REPuzzleHintActor.h"
 #include "Blueprint/UserWidget.h"
 #include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -8,6 +8,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 #include "UI/REPuzzleHintWidget.h"
+#include "UI/LocalWidgetManager.h"
+#include "UI/RERootCanvasWidget.h"
 
 AREPuzzleHintActor::AREPuzzleHintActor()
 {
@@ -158,9 +160,23 @@ void AREPuzzleHintActor::OpenHintWidgetLocal(APlayerController* PlayerController
 		return;
 	}
 
+	ULocalWidgetManager* WidgetManager = ULocalWidgetManager::GetInstance(this);
+	if (IsValid(WidgetManager) == false)
+	{
+		return;
+	}
+
+	URERootCanvasWidget* RootCanvas = Cast<URERootCanvasWidget>(WidgetManager->GetRootWidget());
+	if (IsValid(RootCanvas) == false)
+	{
+		return;
+	}
+
+	ActiveHintWidget = Cast<UREPuzzleHintWidget>(RootCanvas->ShowGameplayWidget(InWidgetClass));
+
 	if (IsValid(ActiveHintWidget) == false || ActiveHintWidget->GetClass() != InWidgetClass)
 	{
-		ActiveHintWidget = CreateWidget<UREPuzzleHintWidget>(PlayerController, InWidgetClass);
+		//ActiveHintWidget = CreateWidget<UREPuzzleHintWidget>(PlayerController, InWidgetClass);
 	}
 
 	if (IsValid(ActiveHintWidget) == false)
@@ -169,10 +185,10 @@ void AREPuzzleHintActor::OpenHintWidgetLocal(APlayerController* PlayerController
 		return;
 	}
 
-	if (ActiveHintWidget->IsInViewport() == false)
-	{
-		ActiveHintWidget->AddToViewport(100);
-	}
+	//if (ActiveHintWidget->IsInViewport() == false)
+	//{
+	//	ActiveHintWidget->AddToViewport(100);
+	//}
 
 	ActiveHintWidget->InitializeHint(this, InHintTitle, InHintText);
 

@@ -7,6 +7,8 @@
 #include "UI/ChatBoxWidget.h"
 #include "GameplayTags.h"
 #include "EngineUtils.h"
+#include "UI/RERootCanvasWidget.h"
+#include "Widgets/CommonActivatableWidgetContainer.h"
 
 // Sets default values for this component's properties
 UChattingComponent::UChattingComponent()
@@ -47,6 +49,20 @@ void UChattingComponent::InitWidget_Implementation()
 	{
 		return;
 	}
+
+	URERootCanvasWidget* RootCanvas = Cast<URERootCanvasWidget>(WidgetManager->GetRootWidget());
+	if (IsValid(RootCanvas) == false)
+	{
+		return;
+	}
+
+	UCommonActivatableWidgetStack* OverlayLayer = RootCanvas->GetOverlayWidgetStack();
+	if (IsValid(OverlayLayer) == false)
+	{
+		return;
+	}
+
+	//OverlayLayer->AddWidget(ChattingWidgetClass);
 
 	// Widget 생성 및 유효성 확인
 	UChatBoxWidget* ChattingWidget = WidgetManager->AddWidget<UChatBoxWidget>(FName("Chatting"), ChattingWidgetClass);

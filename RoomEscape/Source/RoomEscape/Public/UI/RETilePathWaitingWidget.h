@@ -1,7 +1,7 @@
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
-#include "Blueprint/UserWidget.h"
+#include "CommonActivatableWidget.h"
 #include "Puzzles/TilePath/RETilePathTypes.h"
 #include "RETilePathWaitingWidget.generated.h"
 
@@ -13,13 +13,19 @@ class ARETilePathMonitor;
 class ARETilePathStartPanel;
 
 UCLASS(Blueprintable)
-class ROOMESCAPE_API URETilePathWaitingWidget : public UUserWidget
+class ROOMESCAPE_API URETilePathWaitingWidget : public UCommonActivatableWidget
 {
 	GENERATED_BODY()
 
 public:
 	virtual void NativeConstruct() override;
+
+	virtual void NativeOnActivated() override;
+
+	virtual void NativeOnDeactivated() override;
+
 	virtual void NativeDestruct() override;
+
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 
 	UFUNCTION(BlueprintCallable, Category = "Tile Path Waiting")

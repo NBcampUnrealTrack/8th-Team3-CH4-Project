@@ -1,4 +1,4 @@
-#include "Puzzles/TilePath/RETilePathMonitor.h"
+﻿#include "Puzzles/TilePath/RETilePathMonitor.h"
 #include "Blueprint/UserWidget.h"
 #include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -7,6 +7,8 @@
 #include "Puzzles/TilePath/RETilePathManager.h"
 #include "UI/RETilePathMonitorWidget.h"
 #include "UI/RETilePathWaitingWidget.h"
+#include "UI/LocalWidgetManager.h"
+#include "UI/RERootCanvasWidget.h"
 
 ARETilePathMonitor::ARETilePathMonitor()
 {
@@ -60,8 +62,9 @@ void ARETilePathMonitor::CloseMonitorWidget()
 {
 	if (IsValid(ActiveMonitorWidget) == true)
 	{
-		ActiveMonitorWidget->RemoveFromParent();
-		ActiveMonitorWidget = nullptr;
+		//ActiveMonitorWidget->RemoveFromParent();
+		//ActiveMonitorWidget = nullptr;
+		ActiveMonitorWidget->DeactivateWidget();
 	}
 }
 
@@ -83,9 +86,22 @@ void ARETilePathMonitor::OpenMonitorWidgetLocal(APlayerController* PlayerControl
 
 	CloseWaitingWidget();
 
+	ULocalWidgetManager* WidgetManager = ULocalWidgetManager::GetInstance(this);
+	if (IsValid(WidgetManager) == false)
+	{
+		return;
+	}
+
+	URERootCanvasWidget* RootCanvas = Cast<URERootCanvasWidget>(WidgetManager->GetRootWidget());
+	if (IsValid(RootCanvas) == false)
+	{
+		return;
+	}
+
+	ActiveMonitorWidget = Cast<URETilePathMonitorWidget>(RootCanvas->ShowGameplayWidget(MonitorWidgetClass));
 	if (IsValid(ActiveMonitorWidget) == false)
 	{
-		ActiveMonitorWidget = CreateWidget<URETilePathMonitorWidget>(PlayerController, MonitorWidgetClass);
+		//ActiveMonitorWidget = CreateWidget<URETilePathMonitorWidget>(PlayerController, MonitorWidgetClass);
 	}
 
 	if (IsValid(ActiveMonitorWidget) == false)
@@ -93,10 +109,10 @@ void ARETilePathMonitor::OpenMonitorWidgetLocal(APlayerController* PlayerControl
 		return;
 	}
 
-	if (ActiveMonitorWidget->IsInViewport() == false)
-	{
-		ActiveMonitorWidget->AddToPlayerScreen();
-	}
+	//if (ActiveMonitorWidget->IsInViewport() == false)
+	//{
+	//	ActiveMonitorWidget->AddToPlayerScreen();
+	//}
 
 	ActiveMonitorWidget->InitializeMonitor(this);
 }
@@ -239,9 +255,23 @@ void ARETilePathMonitor::OpenWaitingWidgetLocal(APlayerController* PlayerControl
 
 	CloseMonitorWidget();
 
+	ULocalWidgetManager* WidgetManager = ULocalWidgetManager::GetInstance(this);
+	if (IsValid(WidgetManager) == false)
+	{
+		return;
+	}
+
+	URERootCanvasWidget* RootCanvas = Cast<URERootCanvasWidget>(WidgetManager->GetRootWidget());
+	if (IsValid(RootCanvas) == false)
+	{
+		return;
+	}
+
+	ActiveWaitingWidget = Cast<URETilePathWaitingWidget>(RootCanvas->ShowGameplayWidget(WaitingWidgetClass));
+
 	if (IsValid(ActiveWaitingWidget) == false)
 	{
-		ActiveWaitingWidget = CreateWidget<URETilePathWaitingWidget>(PlayerController, WaitingWidgetClass);
+		//ActiveWaitingWidget = CreateWidget<URETilePathWaitingWidget>(PlayerController, WaitingWidgetClass);
 	}
 
 	if (IsValid(ActiveWaitingWidget) == false)
@@ -249,10 +279,10 @@ void ARETilePathMonitor::OpenWaitingWidgetLocal(APlayerController* PlayerControl
 		return;
 	}
 
-	if (ActiveWaitingWidget->IsInViewport() == false)
-	{
-		ActiveWaitingWidget->AddToPlayerScreen();
-	}
+	//if (ActiveWaitingWidget->IsInViewport() == false)
+	//{
+	//	ActiveWaitingWidget->AddToPlayerScreen();
+	//}
 
 	ActiveWaitingWidget->InitializeWaiting(this, GetTilePathManager(), ERETilePathParticipantRole::Guide);
 }
