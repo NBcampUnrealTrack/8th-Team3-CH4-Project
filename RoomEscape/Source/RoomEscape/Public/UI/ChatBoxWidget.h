@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Blueprint/UserWidget.h"
+#include "CommonActivatableWidget.h"
 #include "UI/InitializeUtilityInterface.h"
 #include "ChatBoxWidget.generated.h"
 
@@ -15,12 +15,16 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnMessageCommittedSignature, const
  * 
  */
 UCLASS()
-class ROOMESCAPE_API UChatBoxWidget : public UUserWidget, public IInitializeUtilityInterface
+class ROOMESCAPE_API UChatBoxWidget : public UCommonActivatableWidget, public IInitializeUtilityInterface
 {
 	GENERATED_BODY()
 	
 public:
 	virtual void NativeConstruct() override;
+
+	virtual void NativeOnActivated() override;
+
+	virtual void NativeOnDeactivated() override;
 
 	virtual void NativeDestruct() override;
 

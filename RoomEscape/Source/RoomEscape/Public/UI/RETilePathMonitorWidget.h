@@ -1,7 +1,7 @@
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
-#include "Blueprint/UserWidget.h"
+#include "CommonActivatableWidget.h"
 #include "Puzzles/TilePath/RETilePathTypes.h"
 #include "RETilePathMonitorWidget.generated.h"
 
@@ -9,14 +9,20 @@ class UButton;
 class UTextBlock;
 class ARETilePathMonitor;
 class ARETilePathManager;
+class URETextButtonBase;
 
 UCLASS(Blueprintable)
-class ROOMESCAPE_API URETilePathMonitorWidget : public UUserWidget
+class ROOMESCAPE_API URETilePathMonitorWidget : public UCommonActivatableWidget
 {
 	GENERATED_BODY()
 
 public:
 	virtual void NativeConstruct() override;
+
+	virtual void NativeOnActivated() override;
+
+	virtual void NativeOnDeactivated() override;
+
 	virtual void NativeDestruct() override;
 
 protected:
@@ -54,16 +60,16 @@ protected:
 	FText AllQuestionsSolvedText = FText::FromString(TEXT("CLEAR\n모든 문제를 맞혔습니다"));
 
 	UPROPERTY(meta = (BindWidgetOptional), BlueprintReadOnly, Category = "Tile Path Monitor")
-	TObjectPtr<UButton> BTN_A;
+	TObjectPtr<URETextButtonBase> BTN_A;
 
 	UPROPERTY(meta = (BindWidgetOptional), BlueprintReadOnly, Category = "Tile Path Monitor")
-	TObjectPtr<UButton> BTN_B;
+	TObjectPtr<URETextButtonBase> BTN_B;
 
 	UPROPERTY(meta = (BindWidgetOptional), BlueprintReadOnly, Category = "Tile Path Monitor")
-	TObjectPtr<UButton> BTN_C;
+	TObjectPtr<URETextButtonBase> BTN_C;
 
 	UPROPERTY(meta = (BindWidgetOptional), BlueprintReadOnly, Category = "Tile Path Monitor")
-	TObjectPtr<UButton> BTN_D;
+	TObjectPtr<URETextButtonBase> BTN_D;
 
 	UPROPERTY(meta = (BindWidgetOptional), BlueprintReadOnly, Category = "Tile Path Monitor")
 	TObjectPtr<UButton> BTN_Close;

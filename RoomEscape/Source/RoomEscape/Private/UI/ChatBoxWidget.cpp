@@ -21,6 +21,16 @@ void UChatBoxWidget::NativeConstruct()
 	}
 }
 
+void UChatBoxWidget::NativeOnActivated()
+{
+	Super::NativeOnActivated();
+}
+
+void UChatBoxWidget::NativeOnDeactivated()
+{
+	Super::NativeOnDeactivated();
+}
+
 void UChatBoxWidget::NativeDestruct()
 {
 	if (IsValid(EditableText_InputField) == true)

@@ -24,6 +24,10 @@ class ROOMESCAPE_API URESessionRoomWidget : public UCommonActivatableWidget
 public:
 	virtual void NativeConstruct() override;
 
+	virtual void NativeOnActivated() override;
+
+	virtual void NativeOnDeactivated() override;
+
 public:
 	// ReadyButton을 
 	UPROPERTY(BlueprintAssignable)

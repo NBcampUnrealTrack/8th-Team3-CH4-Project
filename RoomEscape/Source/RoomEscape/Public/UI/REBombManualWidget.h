@@ -1,7 +1,7 @@
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
-#include "Blueprint/UserWidget.h"
+#include "CommonActivatableWidget.h"
 #include "REBombManualWidget.generated.h"
 
 class UButton;
@@ -9,12 +9,17 @@ class UTextBlock;
 class AREDefusalManual;
 
 UCLASS(Blueprintable)
-class ROOMESCAPE_API UREBombManualWidget : public UUserWidget
+class ROOMESCAPE_API UREBombManualWidget : public UCommonActivatableWidget
 {
 	GENERATED_BODY()
 
 public:
 	virtual void NativeConstruct() override;
+
+	virtual void NativeOnActivated() override;
+
+	virtual void NativeOnDeactivated() override;
+
 	virtual void NativeDestruct() override;
 
 protected:

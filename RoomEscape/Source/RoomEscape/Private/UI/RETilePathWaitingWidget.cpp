@@ -1,4 +1,4 @@
-#include "UI/RETilePathWaitingWidget.h"
+﻿#include "UI/RETilePathWaitingWidget.h"
 #include "Components/Button.h"
 #include "Components/TextBlock.h"
 #include "GameFramework/PlayerController.h"
@@ -10,6 +10,17 @@ void URETilePathWaitingWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
+	//if (IsValid(BTN_Cancel) == true)
+	//{
+	//	BTN_Cancel->OnClicked.RemoveAll(this);
+	//	BTN_Cancel->OnClicked.AddDynamic(this, &URETilePathWaitingWidget::HandleCancelClicked);
+	//}
+}
+
+void URETilePathWaitingWidget::NativeOnActivated()
+{
+	Super::NativeOnActivated();
+
 	if (IsValid(BTN_Cancel) == true)
 	{
 		BTN_Cancel->OnClicked.RemoveAll(this);
@@ -17,13 +28,24 @@ void URETilePathWaitingWidget::NativeConstruct()
 	}
 }
 
-void URETilePathWaitingWidget::NativeDestruct()
+void URETilePathWaitingWidget::NativeOnDeactivated()
 {
 	UnbindManagerEvents();
 	RestoreInput();
 	SourceActor = nullptr;
 	TilePathManager = nullptr;
 	ParticipantRole = ERETilePathParticipantRole::None;
+
+	Super::NativeOnDeactivated();
+}
+
+void URETilePathWaitingWidget::NativeDestruct()
+{
+	//UnbindManagerEvents();
+	//RestoreInput();
+	//SourceActor = nullptr;
+	//TilePathManager = nullptr;
+	//ParticipantRole = ERETilePathParticipantRole::None;
 	Super::NativeDestruct();
 }
 
@@ -239,7 +261,8 @@ void URETilePathWaitingWidget::CompleteWaiting(bool bStarted)
 	const ERETilePathParticipantRole CachedRole = ParticipantRole;
 
 	RestoreInput();
-	RemoveFromParent();
+	//RemoveFromParent();
+	DeactivateWidget();
 
 	if (bStarted == true && CachedRole == ERETilePathParticipantRole::Guide)
 	{

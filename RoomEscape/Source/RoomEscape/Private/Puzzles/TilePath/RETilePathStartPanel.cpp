@@ -1,10 +1,12 @@
-#include "Puzzles/TilePath/RETilePathStartPanel.h"
+﻿#include "Puzzles/TilePath/RETilePathStartPanel.h"
 #include "Blueprint/UserWidget.h"
 #include "Components/StaticMeshComponent.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
 #include "Puzzles/TilePath/RETilePathManager.h"
 #include "UI/RETilePathWaitingWidget.h"
+#include "UI/LocalWidgetManager.h"
+#include "UI/RERootCanvasWidget.h"
 
 ARETilePathStartPanel::ARETilePathStartPanel()
 {
@@ -27,8 +29,9 @@ void ARETilePathStartPanel::CloseWaitingWidget()
 {
 	if (IsValid(ActiveWaitingWidget) == true)
 	{
-		ActiveWaitingWidget->RemoveFromParent();
-		ActiveWaitingWidget = nullptr;
+		//ActiveWaitingWidget->RemoveFromParent();
+		//ActiveWaitingWidget = nullptr;
+		ActiveWaitingWidget->DeactivateWidget();
 	}
 }
 
@@ -120,9 +123,23 @@ void ARETilePathStartPanel::OpenWaitingWidgetLocal(APlayerController* PlayerCont
 		return;
 	}
 
+	ULocalWidgetManager* WidgetManager = ULocalWidgetManager::GetInstance(this);
+	if (IsValid(WidgetManager) == false)
+	{
+		return;
+	}
+
+	URERootCanvasWidget* RootCanvas = Cast<URERootCanvasWidget>(WidgetManager->GetRootWidget());
+	if (IsValid(RootCanvas) == false)
+	{
+		return;
+	}
+
+	ActiveWaitingWidget = Cast<URETilePathWaitingWidget>(RootCanvas->ShowGameplayWidget(WaitingWidgetClass));
+
 	if (IsValid(ActiveWaitingWidget) == false)
 	{
-		ActiveWaitingWidget = CreateWidget<URETilePathWaitingWidget>(PlayerController, WaitingWidgetClass);
+		//ActiveWaitingWidget = CreateWidget<URETilePathWaitingWidget>(PlayerController, WaitingWidgetClass);
 	}
 
 	if (IsValid(ActiveWaitingWidget) == false)
@@ -130,10 +147,10 @@ void ARETilePathStartPanel::OpenWaitingWidgetLocal(APlayerController* PlayerCont
 		return;
 	}
 
-	if (ActiveWaitingWidget->IsInViewport() == false)
-	{
-		ActiveWaitingWidget->AddToPlayerScreen();
-	}
+	//if (ActiveWaitingWidget->IsInViewport() == false)
+	//{
+	//	ActiveWaitingWidget->AddToPlayerScreen();
+	//}
 
 	ActiveWaitingWidget->InitializeWaiting(this, GetTilePathManager(), ERETilePathParticipantRole::Walker);
 }

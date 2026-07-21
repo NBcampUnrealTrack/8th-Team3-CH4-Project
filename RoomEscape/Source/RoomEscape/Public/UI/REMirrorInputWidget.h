@@ -10,6 +10,7 @@ class UTextBlock;
 class AREMirrorInputPanel;
 class AREMirrorRoomManager;
 class UCommonButtonBase;
+class URETextButtonBase;
 
 UCLASS(Blueprintable)
 class ROOMESCAPE_API UREMirrorInputWidget : public UCommonActivatableWidget
@@ -135,13 +136,13 @@ private:
 
 	void FindOptionalWidgets();
 	void BindOptionButtons();
-	void BindOptionButton(int32 Index, UButton* Button);
+	void BindOptionButton(int32 Index, URETextButtonBase* Button);
 	void RefreshOptionButtons();
 	void RefreshCompletionView();
 	void SetOptionButton(int32 Index, bool bVisible, const FText& OptionText);
 	void SetTextByName(const FName& WidgetName, const FText& TextValue);
 	void SetWidgetVisibilityByName(const FName& WidgetName, ESlateVisibility NewVisibility);
-	UButton* FindButtonByOptionIndex(int32 Index) const;
+	URETextButtonBase* FindButtonByOptionIndex(int32 Index) const;
 	AActor* GetOwningInteractor() const;
 	void CaptureInput();
 	void RestoreInput();
