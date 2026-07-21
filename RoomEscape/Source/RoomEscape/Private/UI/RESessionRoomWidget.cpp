@@ -27,6 +27,17 @@ void URESessionRoomWidget::NativeConstruct()
 	}
 }
 
+void URESessionRoomWidget::NativeOnActivated()
+{
+	Super::NativeOnActivated();
+}
+
+void URESessionRoomWidget::NativeOnDeactivated()
+{
+	RemoveLeavePlayer(GetOwningPlayerState());
+	Super::NativeOnDeactivated();
+}
+
 void URESessionRoomWidget::SetSessionNameAndPassword(FText SessionName, FText SessionPassword)
 {
 	if (IsValid(TextBlock_SessionName) == true)

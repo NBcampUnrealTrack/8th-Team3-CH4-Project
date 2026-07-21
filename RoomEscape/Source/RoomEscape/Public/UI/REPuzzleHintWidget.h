@@ -1,7 +1,8 @@
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "CommonActivatableWidget.h"
 #include "REPuzzleHintWidget.generated.h"
 
 class UButton;
@@ -9,12 +10,17 @@ class UTextBlock;
 class AREPuzzleHintActor;
 
 UCLASS(Blueprintable)
-class ROOMESCAPE_API UREPuzzleHintWidget : public UUserWidget
+class ROOMESCAPE_API UREPuzzleHintWidget : public UCommonActivatableWidget
 {
 	GENERATED_BODY()
 
 public:
 	virtual void NativeConstruct() override;
+
+	virtual void NativeOnActivated() override;
+
+	virtual void NativeOnDeactivated() override;
+
 	virtual void NativeDestruct() override;
 
 protected:

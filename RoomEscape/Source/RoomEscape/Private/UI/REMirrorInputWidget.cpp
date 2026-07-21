@@ -8,6 +8,7 @@
 #include "Puzzles/MirrorRoom/REMirrorPuzzleData.h"
 #include "Puzzles/MirrorRoom/REMirrorRoomManager.h"
 #include "CommonButtonBase.h"
+#include "UI/RETextButtonBase.h"
 
 void UREMirrorInputWidget::NativeConstruct()
 {
@@ -271,28 +272,28 @@ void UREMirrorInputWidget::BindOptionButtons()
 	}
 }
 
-void UREMirrorInputWidget::BindOptionButton(int32 Index, UButton* Button)
+void UREMirrorInputWidget::BindOptionButton(int32 Index, URETextButtonBase* Button)
 {
 	if (IsValid(Button) == false)
 	{
 		return;
 	}
 
-	Button->OnClicked.RemoveAll(this);
+	Button->OnClicked().RemoveAll(this);
 	switch (Index)
 	{
-	case 0: Button->OnClicked.AddDynamic(this, &UREMirrorInputWidget::HandleOption01Clicked); break;
-	case 1: Button->OnClicked.AddDynamic(this, &UREMirrorInputWidget::HandleOption02Clicked); break;
-	case 2: Button->OnClicked.AddDynamic(this, &UREMirrorInputWidget::HandleOption03Clicked); break;
-	case 3: Button->OnClicked.AddDynamic(this, &UREMirrorInputWidget::HandleOption04Clicked); break;
-	case 4: Button->OnClicked.AddDynamic(this, &UREMirrorInputWidget::HandleOption05Clicked); break;
-	case 5: Button->OnClicked.AddDynamic(this, &UREMirrorInputWidget::HandleOption06Clicked); break;
-	case 6: Button->OnClicked.AddDynamic(this, &UREMirrorInputWidget::HandleOption07Clicked); break;
-	case 7: Button->OnClicked.AddDynamic(this, &UREMirrorInputWidget::HandleOption08Clicked); break;
-	case 8: Button->OnClicked.AddDynamic(this, &UREMirrorInputWidget::HandleOption09Clicked); break;
-	case 9: Button->OnClicked.AddDynamic(this, &UREMirrorInputWidget::HandleOption10Clicked); break;
-	case 10: Button->OnClicked.AddDynamic(this, &UREMirrorInputWidget::HandleOption11Clicked); break;
-	case 11: Button->OnClicked.AddDynamic(this, &UREMirrorInputWidget::HandleOption12Clicked); break;
+	case 0: Button->OnClicked().AddUObject(this, &UREMirrorInputWidget::HandleOption01Clicked); break;
+	case 1: Button->OnClicked().AddUObject(this, &UREMirrorInputWidget::HandleOption02Clicked); break;
+	case 2: Button->OnClicked().AddUObject(this, &UREMirrorInputWidget::HandleOption03Clicked); break;
+	case 3: Button->OnClicked().AddUObject(this, &UREMirrorInputWidget::HandleOption04Clicked); break;
+	case 4: Button->OnClicked().AddUObject(this, &UREMirrorInputWidget::HandleOption05Clicked); break;
+	case 5: Button->OnClicked().AddUObject(this, &UREMirrorInputWidget::HandleOption06Clicked); break;
+	case 6: Button->OnClicked().AddUObject(this, &UREMirrorInputWidget::HandleOption07Clicked); break;
+	case 7: Button->OnClicked().AddUObject(this, &UREMirrorInputWidget::HandleOption08Clicked); break;
+	case 8: Button->OnClicked().AddUObject(this, &UREMirrorInputWidget::HandleOption09Clicked); break;
+	case 9: Button->OnClicked().AddUObject(this, &UREMirrorInputWidget::HandleOption10Clicked); break;
+	case 10: Button->OnClicked().AddUObject(this, &UREMirrorInputWidget::HandleOption11Clicked); break;
+	case 11: Button->OnClicked().AddUObject(this, &UREMirrorInputWidget::HandleOption12Clicked); break;
 	default: break;
 	}
 }
@@ -343,13 +344,16 @@ void UREMirrorInputWidget::RefreshCompletionView()
 
 void UREMirrorInputWidget::SetOptionButton(int32 Index, bool bVisible, const FText& OptionText)
 {
-	UButton* Button = FindButtonByOptionIndex(Index);
+	//UButton* Button = FindButtonByOptionIndex(Index);
+	URETextButtonBase* Button = FindButtonByOptionIndex(Index);
 	if (IsValid(Button) == true)
 	{
 		Button->SetVisibility(bVisible == true ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+
+		Button->SetButtonText(OptionText);
 	}
 
-	SetTextByName(*FString::Printf(TEXT("TXT_Input%02d"), Index + 1), OptionText);
+	//SetTextByName(*FString::Printf(TEXT("TXT_Input%02d"), Index + 1), OptionText);
 }
 
 void UREMirrorInputWidget::SetTextByName(const FName& WidgetName, const FText& TextValue)
@@ -378,14 +382,14 @@ void UREMirrorInputWidget::SetWidgetVisibilityByName(const FName& WidgetName, ES
 	}
 }
 
-UButton* UREMirrorInputWidget::FindButtonByOptionIndex(int32 Index) const
+URETextButtonBase* UREMirrorInputWidget::FindButtonByOptionIndex(int32 Index) const
 {
 	if (IsValid(WidgetTree) == false)
 	{
 		return nullptr;
 	}
 
-	return Cast<UButton>(WidgetTree->FindWidget(*FString::Printf(TEXT("BTN_Input%02d"), Index + 1)));
+	return Cast<URETextButtonBase>(WidgetTree->FindWidget(*FString::Printf(TEXT("BTN_Input%02d"), Index + 1)));
 }
 
 AActor* UREMirrorInputWidget::GetOwningInteractor() const

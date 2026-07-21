@@ -1,4 +1,4 @@
-#include "Puzzles/BombDefusal/REBombDefusalManager.h"
+﻿#include "Puzzles/BombDefusal/REBombDefusalManager.h"
 
 #include "Character/REPlayerController.h"
 #include "Blueprint/UserWidget.h"
@@ -20,6 +20,8 @@
 #include "UI/REBombDefusalWidget.h"
 #include "UI/REBombFeedbackWidget.h"
 #include "UI/REFadeWidget.h"
+#include "UI/LocalWidgetManager.h"
+#include "UI/RERootCanvasWidget.h"
 
 AREBombDefusalManager::AREBombDefusalManager()
 {
@@ -273,8 +275,9 @@ void AREBombDefusalManager::CloseBombDefusalWidget()
 {
 	if (IsValid(ActiveBombDefusalWidget) == true)
 	{
-		ActiveBombDefusalWidget->RemoveFromParent();
-		ActiveBombDefusalWidget = nullptr;
+		//ActiveBombDefusalWidget->RemoveFromParent();
+		//ActiveBombDefusalWidget = nullptr;
+		ActiveBombDefusalWidget->DeactivateWidget();
 	}
 
 	SynchronizePromptCandidatesFromCurrentOverlaps();
@@ -1130,9 +1133,23 @@ void AREBombDefusalManager::OpenBombDefusalWidgetForLocalPlayer(APlayerControlle
 		return;
 	}
 
+	ULocalWidgetManager* WidgetManager = ULocalWidgetManager::GetInstance(this);
+	if (IsValid(WidgetManager) == false)
+	{
+		return;
+	}
+
+	URERootCanvasWidget* RootCanvas = Cast<URERootCanvasWidget>(WidgetManager->GetRootWidget());
+	if (IsValid(RootCanvas) == false)
+	{
+		return;
+	}
+
+	ActiveBombDefusalWidget = Cast<UREBombDefusalWidget>(RootCanvas->ShowGameplayWidget(BombDefusalWidgetClass));
+
 	if (IsValid(ActiveBombDefusalWidget) == false || ActiveBombDefusalWidget->GetClass() != BombDefusalWidgetClass.Get())
 	{
-		ActiveBombDefusalWidget = CreateWidget<UREBombDefusalWidget>(PlayerController, BombDefusalWidgetClass);
+		//ActiveBombDefusalWidget = CreateWidget<UREBombDefusalWidget>(PlayerController, BombDefusalWidgetClass);
 	}
 
 	if (IsValid(ActiveBombDefusalWidget) == false)
@@ -1141,10 +1158,10 @@ void AREBombDefusalManager::OpenBombDefusalWidgetForLocalPlayer(APlayerControlle
 		return;
 	}
 
-	if (ActiveBombDefusalWidget->IsInViewport() == false)
-	{
-		ActiveBombDefusalWidget->AddToViewport(BombDefusalWidgetZOrder);
-	}
+	//if (ActiveBombDefusalWidget->IsInViewport() == false)
+	//{
+	//	ActiveBombDefusalWidget->AddToViewport(BombDefusalWidgetZOrder);
+	//}
 
 	ActiveBombDefusalWidget->InitializeBombDefusal(this);
 	RefreshInteractionPromptVisibility();

@@ -7,6 +7,8 @@
 #include "UI/ChatBoxWidget.h"
 #include "GameplayTags.h"
 #include "EngineUtils.h"
+#include "UI/RERootCanvasWidget.h"
+#include "Widgets/CommonActivatableWidgetContainer.h"
 
 // Sets default values for this component's properties
 UChattingComponent::UChattingComponent()
@@ -48,24 +50,49 @@ void UChattingComponent::InitWidget_Implementation()
 		return;
 	}
 
-	// Widget 생성 및 유효성 확인
-	UChatBoxWidget* ChattingWidget = WidgetManager->AddWidget<UChatBoxWidget>(FName("Chatting"), ChattingWidgetClass);
-	if (IsValid(ChattingWidget) == false)
+	URERootCanvasWidget* RootCanvas = Cast<URERootCanvasWidget>(WidgetManager->GetRootWidget());
+	if (IsValid(RootCanvas) == false)
 	{
 		return;
 	}
 
+	UCommonActivatableWidgetStack* OverlayLayer = RootCanvas->GetOverlayWidgetStack();
+	if (IsValid(OverlayLayer) == false)
+	{
+		return;
+	}
+
+	// Widget 생성 및 유효성 확인 (Overlay Layer에 생성)
+	ChattingWidgetInstance = Cast<UChatBoxWidget>(OverlayLayer->AddWidget(ChattingWidgetClass));
+	if (IsValid(ChattingWidgetInstance) == false)
+	{
+		return;
+	}
+
+	// Widget Manager에 Widget 등록
+	WidgetManager->AddWidgetInstance(FName("Chatting"), ChattingWidgetInstance);
+
 	// Widget 초기화
-	IInitializeUtilityInterface::Execute_InitializeWidgetByComponent(ChattingWidget, this);
+	IInitializeUtilityInterface::Execute_InitializeWidgetByComponent(ChattingWidgetInstance, this);
 	
 	// 채팅 전송 이벤트 연결
-	ChattingWidget->OnMessageCommitted.AddDynamic(this, &UChattingComponent::ServerOnMessageCommitted);
+	ChattingWidgetInstance->OnMessageCommitted.AddDynamic(this, &UChattingComponent::ServerOnMessageCommitted);
 
-	/*
-	* HUD Widget 구현 후 ChattingWidget을 HUD Widget의 Child로 추가하도록 수정 필요
-	*/
-	UE_LOG(LogTemp, Warning, TEXT("# ChattingWidget을 HUD Widget의 Child로 추가하도록 수정 필요"));
-	ChattingWidget->AddToPlayerScreen();
+	//// 채팅 전송 시 InputMode 변경 함수 연결
+	//ChattingWidgetInstance->OnMessageCommitted.AddDynamic(this, &UChattingComponent::SetInputModeGameOnly);
+
+}
+
+void UChattingComponent::SetInputModeGameOnly()
+{
+	// Local Client 확인
+	if (IsValid(OwnerController) == false || OwnerController->IsLocalController() == false)
+	{
+		return;
+	}
+
+	OwnerController->SetInputMode(FInputModeGameOnly());
+	OwnerController->SetShowMouseCursor(false);
 }
 
 void UChattingComponent::ServerOnMessageCommitted_Implementation(const FGameplayTag& ChannelTag, const FString& Message)

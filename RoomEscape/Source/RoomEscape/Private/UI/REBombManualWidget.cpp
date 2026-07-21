@@ -1,4 +1,4 @@
-#include "UI/REBombManualWidget.h"
+﻿#include "UI/REBombManualWidget.h"
 #include "Blueprint/WidgetTree.h"
 #include "Components/Button.h"
 #include "Components/TextBlock.h"
@@ -8,6 +8,12 @@
 void UREBombManualWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
+
+}
+
+void UREBombManualWidget::NativeOnActivated()
+{
+	Super::NativeOnActivated();
 
 	if (IsValid(WidgetTree) == true)
 	{
@@ -32,10 +38,17 @@ void UREBombManualWidget::NativeConstruct()
 	}
 }
 
-void UREBombManualWidget::NativeDestruct()
+void UREBombManualWidget::NativeOnDeactivated()
 {
 	RestoreInput();
 	ManualActor = nullptr;
+
+	Super::NativeOnDeactivated();
+}
+
+void UREBombManualWidget::NativeDestruct()
+{
+
 	Super::NativeDestruct();
 }
 
@@ -52,10 +65,11 @@ void UREBombManualWidget::InitializeManual(AREDefusalManual* InManualActor, cons
 void UREBombManualWidget::CloseManual()
 {
 	RestoreInput();
-	if (IsInViewport() == true)
-	{
-		RemoveFromParent();
-	}
+	DeactivateWidget();
+	//if (IsInViewport() == true)
+	//{
+	//	RemoveFromParent();
+	//}
 }
 
 AREDefusalManual* UREBombManualWidget::GetManualActor() const

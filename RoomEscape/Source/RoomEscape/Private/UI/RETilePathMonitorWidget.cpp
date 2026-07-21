@@ -1,24 +1,43 @@
-#include "UI/RETilePathMonitorWidget.h"
+﻿#include "UI/RETilePathMonitorWidget.h"
 #include "Components/Button.h"
 #include "Components/TextBlock.h"
 #include "GameFramework/PlayerController.h"
 #include "Puzzles/TilePath/RETilePathFunctionLibrary.h"
 #include "Puzzles/TilePath/RETilePathManager.h"
 #include "Puzzles/TilePath/RETilePathMonitor.h"
+#include "UI/RETextButtonBase.h"
 
 void URETilePathMonitorWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
+	//BindButtons();
+}
+
+void URETilePathMonitorWidget::NativeOnActivated()
+{
+	Super::NativeOnActivated();
+
 	BindButtons();
 }
 
-void URETilePathMonitorWidget::NativeDestruct()
+void URETilePathMonitorWidget::NativeOnDeactivated()
 {
 	UnbindManagerEvents();
 	RestoreInput();
 	MonitorActor = nullptr;
 	CurrentQuestionId = NAME_None;
 	CachedRevealedMoves.Reset();
+
+	Super::NativeOnDeactivated();
+}
+
+void URETilePathMonitorWidget::NativeDestruct()
+{
+	//UnbindManagerEvents();
+	//RestoreInput();
+	//MonitorActor = nullptr;
+	//CurrentQuestionId = NAME_None;
+	//CachedRevealedMoves.Reset();
 	Super::NativeDestruct();
 }
 
@@ -71,7 +90,8 @@ void URETilePathMonitorWidget::CloseMonitor()
 	}
 
 	RestoreInput();
-	RemoveFromParent();
+	DeactivateWidget();
+	//RemoveFromParent();
 }
 
 void URETilePathMonitorWidget::HandleAnswerResult(bool bCorrect, const FRETilePathRevealedMove& RevealedMove, FName NextQuestionId)
@@ -264,26 +284,26 @@ void URETilePathMonitorWidget::BindButtons()
 {
 	if (IsValid(BTN_A) == true)
 	{
-		BTN_A->OnClicked.RemoveAll(this);
-		BTN_A->OnClicked.AddDynamic(this, &URETilePathMonitorWidget::HandleAnswerAClicked);
+		BTN_A->OnClicked().RemoveAll(this);
+		BTN_A->OnClicked().AddUObject(this, &URETilePathMonitorWidget::HandleAnswerAClicked);
 	}
 
 	if (IsValid(BTN_B) == true)
 	{
-		BTN_B->OnClicked.RemoveAll(this);
-		BTN_B->OnClicked.AddDynamic(this, &URETilePathMonitorWidget::HandleAnswerBClicked);
+		BTN_B->OnClicked().RemoveAll(this);
+		BTN_B->OnClicked().AddUObject(this, &URETilePathMonitorWidget::HandleAnswerBClicked);
 	}
 
 	if (IsValid(BTN_C) == true)
 	{
-		BTN_C->OnClicked.RemoveAll(this);
-		BTN_C->OnClicked.AddDynamic(this, &URETilePathMonitorWidget::HandleAnswerCClicked);
+		BTN_C->OnClicked().RemoveAll(this);
+		BTN_C->OnClicked().AddUObject(this, &URETilePathMonitorWidget::HandleAnswerCClicked);
 	}
 
 	if (IsValid(BTN_D) == true)
 	{
-		BTN_D->OnClicked.RemoveAll(this);
-		BTN_D->OnClicked.AddDynamic(this, &URETilePathMonitorWidget::HandleAnswerDClicked);
+		BTN_D->OnClicked().RemoveAll(this);
+		BTN_D->OnClicked().AddUObject(this, &URETilePathMonitorWidget::HandleAnswerDClicked);
 	}
 
 	if (IsValid(BTN_Close) == true)
@@ -307,10 +327,14 @@ void URETilePathMonitorWidget::ApplyQuestionToWidgets(FName QuestionId, const FR
 		TXT_Question->SetText(bAllQuestionsSolved == true ? FText::GetEmpty() : bHasQuestion == true ? QuestionRow.QuestionText : FText::FromString(TEXT("문제 데이터 없음")));
 	}
 
-	SetButtonText(BTN_A, TXT_A, bHasQuestion == true ? QuestionRow.ChoiceA : FText::FromString(TEXT("A")));
-	SetButtonText(BTN_B, TXT_B, bHasQuestion == true ? QuestionRow.ChoiceB : FText::FromString(TEXT("B")));
-	SetButtonText(BTN_C, TXT_C, bHasQuestion == true ? QuestionRow.ChoiceC : FText::FromString(TEXT("C")));
-	SetButtonText(BTN_D, TXT_D, bHasQuestion == true ? QuestionRow.ChoiceD : FText::FromString(TEXT("D")));
+	BTN_A->SetButtonText(QuestionRow.ChoiceA);
+	BTN_B->SetButtonText(QuestionRow.ChoiceB);
+	BTN_C->SetButtonText(QuestionRow.ChoiceC);
+	BTN_D->SetButtonText(QuestionRow.ChoiceD);
+	//SetButtonText(BTN_A, TXT_A, bHasQuestion == true ? QuestionRow.ChoiceA : FText::FromString(TEXT("A")));
+	//SetButtonText(BTN_B, TXT_B, bHasQuestion == true ? QuestionRow.ChoiceB : FText::FromString(TEXT("B")));
+	//SetButtonText(BTN_C, TXT_C, bHasQuestion == true ? QuestionRow.ChoiceC : FText::FromString(TEXT("C")));
+	//SetButtonText(BTN_D, TXT_D, bHasQuestion == true ? QuestionRow.ChoiceD : FText::FromString(TEXT("D")));
 	SetAnswerButtonsEnabled(bHasQuestion == true && bAllQuestionsSolved == false);
 }
 

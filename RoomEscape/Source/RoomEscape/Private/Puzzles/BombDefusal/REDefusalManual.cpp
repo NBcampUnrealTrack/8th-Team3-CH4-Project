@@ -1,4 +1,4 @@
-#include "Puzzles/BombDefusal/REDefusalManual.h"
+﻿#include "Puzzles/BombDefusal/REDefusalManual.h"
 #include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "GameFramework/Pawn.h"
@@ -6,6 +6,8 @@
 #include "Puzzles/BombDefusal/REBombDefusalManager.h"
 #include "Puzzles/BombDefusal/REBombPatternData.h"
 #include "UI/REBombManualWidget.h"
+#include "UI/LocalWidgetManager.h"
+#include "UI/RERootCanvasWidget.h"
 
 AREDefusalManual::AREDefusalManual()
 {
@@ -101,9 +103,22 @@ void AREDefusalManual::OpenManualWidgetLocal(APlayerController* PlayerController
 		return;
 	}
 
+	ULocalWidgetManager* WidgetManager = ULocalWidgetManager::GetInstance(this);
+	if (IsValid(WidgetManager) == false)
+	{
+		return;
+	}
+
+	URERootCanvasWidget* RootCanvas = Cast<URERootCanvasWidget>(WidgetManager->GetRootWidget());
+	if (IsValid(RootCanvas) == false)
+	{
+		return;
+	}
+
+	ActiveManualWidget = Cast<UREBombManualWidget>(RootCanvas->ShowGameplayWidget(InWidgetClass));
 	if (IsValid(ActiveManualWidget) == false || ActiveManualWidget->GetClass() != InWidgetClass)
 	{
-		ActiveManualWidget = CreateWidget<UREBombManualWidget>(PlayerController, InWidgetClass);
+		//ActiveManualWidget = CreateWidget<UREBombManualWidget>(PlayerController, InWidgetClass);
 	}
 
 	if (IsValid(ActiveManualWidget) == false)
@@ -111,10 +126,10 @@ void AREDefusalManual::OpenManualWidgetLocal(APlayerController* PlayerController
 		return;
 	}
 
-	if (ActiveManualWidget->IsInViewport() == false)
-	{
-		ActiveManualWidget->AddToViewport(100);
-	}
+	//if (ActiveManualWidget->IsInViewport() == false)
+	//{
+	//	ActiveManualWidget->AddToViewport(100);
+	//}
 
 	ActiveManualWidget->InitializeManual(this, InManualTitle, InManualText);
 }

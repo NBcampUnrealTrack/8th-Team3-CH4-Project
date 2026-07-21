@@ -1,4 +1,4 @@
-#include "UI/REPuzzleHintWidget.h"
+﻿#include "UI/REPuzzleHintWidget.h"
 #include "Blueprint/WidgetTree.h"
 #include "Components/Button.h"
 #include "Components/TextBlock.h"
@@ -8,6 +8,22 @@
 void UREPuzzleHintWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
+
+	//if (IsValid(BTN_Close) == false && IsValid(WidgetTree) == true)
+	//{
+	//	BTN_Close = Cast<UButton>(WidgetTree->FindWidget(TEXT("BTN_Close")));
+	//}
+
+	//if (IsValid(BTN_Close) == true)
+	//{
+	//	BTN_Close->OnClicked.RemoveAll(this);
+	//	BTN_Close->OnClicked.AddDynamic(this, &UREPuzzleHintWidget::HandleCloseClicked);
+	//}
+}
+
+void UREPuzzleHintWidget::NativeOnActivated()
+{
+	Super::NativeOnActivated();
 
 	if (IsValid(BTN_Close) == false && IsValid(WidgetTree) == true)
 	{
@@ -21,10 +37,18 @@ void UREPuzzleHintWidget::NativeConstruct()
 	}
 }
 
-void UREPuzzleHintWidget::NativeDestruct()
+void UREPuzzleHintWidget::NativeOnDeactivated()
 {
 	RestoreInput();
 	HintActor = nullptr;
+
+	Super::NativeOnDeactivated();
+}
+
+void UREPuzzleHintWidget::NativeDestruct()
+{
+	//RestoreInput();
+	//HintActor = nullptr;
 	Super::NativeDestruct();
 }
 
@@ -41,10 +65,11 @@ void UREPuzzleHintWidget::InitializeHint(AREPuzzleHintActor* InHintActor, const 
 void UREPuzzleHintWidget::CloseHint()
 {
 	RestoreInput();
-	if (IsInViewport() == true)
-	{
-		RemoveFromParent();
-	}
+	DeactivateWidget();
+	//if (IsInViewport() == true)
+	//{
+	//	RemoveFromParent();
+	//}
 }
 
 AREPuzzleHintActor* UREPuzzleHintWidget::GetHintActor() const
